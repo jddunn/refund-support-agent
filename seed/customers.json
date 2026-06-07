@@ -1,0 +1,156 @@
+{
+  "generatedNote": "Synthetic data for testing. Names, emails, and orders are fictional.",
+  "customers": [
+    {
+      "id": "CUST-1001",
+      "name": "Dana Whitfield",
+      "email": "dana.whitfield@example.com",
+      "since": "2023-04-12",
+      "priorRefunds": 0,
+      "orders": [
+        { "id": "ORD-58120", "item": "Aurora Wireless Headphones", "category": "electronics", "price": 219.99, "finalSale": false, "purchasedAt": "2026-05-30", "status": "delivered" }
+      ]
+    },
+    {
+      "id": "CUST-1002",
+      "name": "Marcus Bell",
+      "email": "marcus.bell@example.com",
+      "since": "2024-01-20",
+      "priorRefunds": 1,
+      "orders": [
+        { "id": "ORD-58233", "item": "Clearance Pullover Hoodie", "category": "apparel", "price": 38.0, "finalSale": true, "purchasedAt": "2026-05-28", "status": "delivered" }
+      ]
+    },
+    {
+      "id": "CUST-1003",
+      "name": "Priya Nair",
+      "email": "priya.nair@example.com",
+      "since": "2022-11-03",
+      "priorRefunds": 0,
+      "orders": [
+        { "id": "ORD-58301", "item": "Studio Pro 15 Laptop", "category": "electronics", "price": 899.0, "finalSale": false, "purchasedAt": "2026-06-01", "status": "delivered" }
+      ]
+    },
+    {
+      "id": "CUST-1004",
+      "name": "Leo Fischer",
+      "email": "leo.fischer@example.com",
+      "since": "2023-08-14",
+      "priorRefunds": 0,
+      "orders": [
+        { "id": "ORD-58044", "item": "Trail Running Shoes", "category": "footwear", "price": 129.95, "finalSale": false, "purchasedAt": "2026-04-10", "status": "delivered" }
+      ]
+    },
+    {
+      "id": "CUST-1005",
+      "name": "Tara Osei",
+      "email": "tara.osei@example.com",
+      "since": "2021-05-22",
+      "priorRefunds": 4,
+      "orders": [
+        { "id": "ORD-58410", "item": "Ceramic Cookware Set", "category": "home", "price": 154.5, "finalSale": false, "purchasedAt": "2026-05-31", "status": "delivered" }
+      ]
+    },
+    {
+      "id": "CUST-1006",
+      "name": "Hana Kim",
+      "email": "hana.kim@example.com",
+      "since": "2025-02-09",
+      "priorRefunds": 0,
+      "orders": [
+        { "id": "ORD-58455", "item": "Linen Duvet Cover", "category": "home", "price": 89.0, "finalSale": false, "purchasedAt": "2026-06-02", "status": "delivered" }
+      ]
+    },
+    {
+      "id": "CUST-1007",
+      "name": "Diego Romero",
+      "email": "diego.romero@example.com",
+      "since": "2024-06-30",
+      "priorRefunds": 2,
+      "orders": [
+        { "id": "ORD-58502", "item": "Mechanical Keyboard", "category": "electronics", "price": 119.0, "finalSale": false, "purchasedAt": "2026-05-20", "status": "delivered" }
+      ]
+    },
+    {
+      "id": "CUST-1008",
+      "name": "Amara Okonkwo",
+      "email": "amara.okonkwo@example.com",
+      "since": "2023-03-17",
+      "priorRefunds": 0,
+      "orders": [
+        { "id": "ORD-58560", "item": "Designer Sunglasses", "category": "accessories", "price": 640.0, "finalSale": true, "purchasedAt": "2026-05-29", "status": "delivered" }
+      ]
+    },
+    {
+      "id": "CUST-1009",
+      "name": "Sven Larsson",
+      "email": "sven.larsson@example.com",
+      "since": "2022-09-01",
+      "priorRefunds": 1,
+      "orders": [
+        { "id": "ORD-58611", "item": "Espresso Machine", "category": "home", "price": 459.0, "finalSale": false, "purchasedAt": "2026-06-03", "status": "delivered" }
+      ]
+    },
+    {
+      "id": "CUST-1010",
+      "name": "Mei Chen",
+      "email": "mei.chen@example.com",
+      "since": "2025-04-25",
+      "priorRefunds": 0,
+      "orders": [
+        { "id": "ORD-58655", "item": "Yoga Mat", "category": "fitness", "price": 45.0, "finalSale": false, "purchasedAt": "2026-03-15", "status": "delivered" }
+      ]
+    },
+    {
+      "id": "CUST-1011",
+      "name": "Noah Pereira",
+      "email": "noah.pereira@example.com",
+      "since": "2024-10-12",
+      "priorRefunds": 0,
+      "orders": [
+        { "id": "ORD-58700", "item": "4K Monitor", "category": "electronics", "price": 529.99, "finalSale": false, "purchasedAt": "2026-06-04", "status": "delivered" }
+      ]
+    },
+    {
+      "id": "CUST-1012",
+      "name": "Ingrid Holt",
+      "email": "ingrid.holt@example.com",
+      "since": "2021-12-05",
+      "priorRefunds": 3,
+      "orders": [
+        { "id": "ORD-58744", "item": "Wool Throw Blanket", "category": "home", "price": 72.0, "finalSale": false, "purchasedAt": "2026-06-01", "status": "delivered" }
+      ]
+    },
+    {
+      "id": "CUST-1013",
+      "name": "Rafael Costa",
+      "email": "rafael.costa@example.com",
+      "since": "2023-07-19",
+      "priorRefunds": 0,
+      "orders": [
+        { "id": "ORD-58790", "item": "Bluetooth Speaker", "category": "electronics", "price": 79.99, "finalSale": false, "purchasedAt": "2026-06-05", "status": "delivered" }
+      ]
+    },
+    {
+      "id": "CUST-1014",
+      "name": "Yuki Tanaka",
+      "email": "yuki.tanaka@example.com",
+      "since": "2024-03-28",
+      "priorRefunds": 1,
+      "orders": [
+        { "id": "ORD-58820", "item": "Winter Parka", "category": "apparel", "price": 245.0, "finalSale": false, "purchasedAt": "2026-05-15", "status": "delivered" },
+        { "id": "ORD-58821", "item": "Merino Wool Socks 3-Pack", "category": "apparel", "price": 24.0, "finalSale": false, "purchasedAt": "2026-05-15", "status": "delivered" }
+      ]
+    },
+    {
+      "id": "CUST-1015",
+      "name": "Olivia Grant",
+      "email": "olivia.grant@example.com",
+      "since": "2022-02-14",
+      "priorRefunds": 0,
+      "orders": [
+        { "id": "ORD-58900", "item": "Smart Thermostat", "category": "electronics", "price": 199.0, "finalSale": false, "purchasedAt": "2026-05-09", "status": "delivered" }
+      ]
+    }
+  ]
+}
