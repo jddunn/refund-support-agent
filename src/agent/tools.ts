@@ -13,6 +13,8 @@ export interface ToolContext {
   now: Date;
   /** Record a tool call to the run's trace. */
   record: (node: string, input: unknown, output: unknown) => Promise<void>;
+  /** Called when a real order is resolved, so the guard can re-validate it. */
+  onOrderResolved?: (orderId: string) => void;
 }
 
 let cachedPolicy: string | null = null;
@@ -54,6 +56,7 @@ export function buildTools(ctx: ToolContext) {
   const getOrder = tool(
     async ({ orderId }) => {
       const order = await findOrder(ctx.db, orderId);
+      if (order) ctx.onOrderResolved?.(order.id);
       const result = order ?? { found: false, orderId };
       await ctx.record('get_order', { orderId }, result);
       return JSON.stringify(result);
@@ -83,6 +86,7 @@ export function buildTools(ctx: ToolContext) {
   const checkEligibility = tool(
     async ({ orderId, customerId, requestedAmount }) => {
       const order = await findOrder(ctx.db, orderId);
+      if (order) ctx.onOrderResolved?.(order.id);
       const customer = await findCustomer(ctx.db, customerId);
       const verdict = evaluateRefund({
         order,

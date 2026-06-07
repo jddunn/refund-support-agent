@@ -103,11 +103,18 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
   const usage: Usage = { input: 0, output: 0 };
   const handle = makeModel('agent');
 
+  // The order resolved during the run, captured from the tools so the guard can
+  // re-validate even when the model leaves the order out of its decision.
+  const resolved: { orderId?: string } = {};
+
   const tools = buildTools({
     db,
     now,
     record: (node, toolInput, toolOutput) =>
       trace.event({ node, kind: 'tool', input: toolInput, output: toolOutput }),
+    onOrderResolved: (orderId) => {
+      resolved.orderId = orderId;
+    },
   });
   const toolNode = new ToolNode(tools);
   const boundAgent = handle.model.bindTools!(tools);
@@ -167,15 +174,18 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
 
   async function guardNode(state: RefundStateType) {
     const proposed = state.proposed ?? SAFE_DENY;
+    // Prefer the order actually resolved during the run over the model's claim,
+    // so the deterministic check runs even when the model omits the order.
+    const orderId = proposed.orderId ?? resolved.orderId ?? null;
 
-    if (proposed.orderId) {
-      const order = await findOrder(db, proposed.orderId);
+    if (orderId) {
+      const order = await findOrder(db, orderId);
       const customer = state.customerId ? await findCustomer(db, state.customerId) : undefined;
       const verdict = evaluateRefund({
         order,
         customer,
         request: {
-          orderId: proposed.orderId,
+          orderId,
           customerId: state.customerId ?? '',
           requestedAmount: proposed.amount > 0 ? proposed.amount : undefined,
         },
@@ -183,7 +193,7 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
       });
 
       if (verdict.outcome !== proposed.decision) {
-        const corrected = rebuildFromVerdict(verdict, proposed.orderId);
+        const corrected = rebuildFromVerdict(verdict, orderId);
         await trace.event({
           node: 'guard',
           kind: 'guard',
@@ -197,9 +207,10 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
         node: 'guard',
         kind: 'guard',
         input: { proposed: proposed.decision },
-        output: { engine: verdict.outcome, overridden: false },
+        output: { engine: verdict.outcome, overridden: false, amount: verdict.amount },
       });
-      return { verdict };
+      // Cap the amount at what the engine permits, even when the outcome matches.
+      return { verdict, proposed: { ...proposed, amount: verdict.amount } };
     }
 
     // No order in play: an approval is impossible, so block one if proposed.
@@ -254,9 +265,15 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
     .addEdge('respond', END)
     .compile();
 
+  // Tell the model which customer it is serving so it can look them up. The
+  // guard still trusts only input.customerId, never the model's restatement.
+  const systemPrompt = input.customerId
+    ? `${AGENT_SYSTEM_PROMPT}\n\nThe customer you are assisting has account id ${input.customerId}. Use this id when you look up the customer and check eligibility.`
+    : AGENT_SYSTEM_PROMPT;
+
   const initial = {
     messages: [
-      new SystemMessage(AGENT_SYSTEM_PROMPT),
+      new SystemMessage(systemPrompt),
       ...(input.history ?? []),
       new HumanMessage(input.message),
     ],
