@@ -1,0 +1,38 @@
+@use '../../styles/design-tokens' as t;
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: t.$font-size-sm;
+
+  th,
+  td {
+    text-align: left;
+    padding: t.$spacing-sm;
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    color: var(--text-dim);
+    font-weight: t.$font-weight-medium;
+  }
+}
+
+.status {
+  display: inline-block;
+  padding: 1px t.$spacing-sm;
+  border-radius: t.$radius-pill;
+  font-size: 0.72rem;
+  font-weight: t.$font-weight-semibold;
+  color: hsl(222 30% 10%);
+}
+
+.pass {
+  background: var(--approve);
+}
+.fail {
+  background: var(--deny);
+}
+.notrun {
+  background: var(--text-dim);
+}

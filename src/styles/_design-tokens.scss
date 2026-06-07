@@ -1,0 +1,24 @@
+// Non-color design primitives as SCSS variables. Theme colors live as CSS
+// custom properties in globals.scss so they can change without recompiling.
+//
+//   @use '../../styles/design-tokens' as t;
+//   padding: t.$spacing-md;
+
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 12px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+
+$radius-sm: 4px;
+$radius-md: 8px;
+$radius-lg: 12px;
+$radius-pill: 9999px;
+
+$font-size-sm: 0.875rem;
+$font-size-body: 1rem;
+$font-size-lg: 1.125rem;
+$font-size-heading: 1.5rem;
+
+$font-weight-medium: 500;
+$font-weight-semibold: 600;

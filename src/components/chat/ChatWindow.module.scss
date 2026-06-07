@@ -1,0 +1,138 @@
+@use '../../styles/design-tokens' as t;
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 140px);
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: t.$spacing-sm;
+  padding-bottom: t.$spacing-md;
+}
+
+.pickerLabel {
+  font-size: t.$font-size-sm;
+  color: var(--text-dim);
+}
+
+.picker {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: t.$radius-md;
+  padding: t.$spacing-xs t.$spacing-sm;
+  font-size: t.$font-size-sm;
+}
+
+.log {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: t.$spacing-md;
+  padding: t.$spacing-md;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: t.$radius-lg;
+}
+
+.empty {
+  color: var(--text-dim);
+  font-size: t.$font-size-sm;
+  margin: auto;
+}
+
+.customer,
+.agent {
+  max-width: 80%;
+  padding: t.$spacing-sm t.$spacing-md;
+  border-radius: t.$radius-lg;
+}
+
+.customer {
+  align-self: flex-end;
+  background: var(--accent);
+  color: hsl(222 30% 12%);
+}
+
+.agent {
+  align-self: flex-start;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.text {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.badge {
+  display: inline-block;
+  margin-bottom: t.$spacing-xs;
+  padding: 1px t.$spacing-sm;
+  border-radius: t.$radius-pill;
+  font-size: 0.72rem;
+  font-weight: t.$font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: hsl(222 30% 10%);
+}
+
+.approve {
+  background: var(--approve);
+}
+.deny {
+  background: var(--deny);
+}
+.escalate {
+  background: var(--escalate);
+}
+
+.cite {
+  margin: t.$spacing-xs 0 0;
+  font-size: t.$font-size-sm;
+  color: var(--text-dim);
+}
+
+.traceLink {
+  display: inline-block;
+  margin-top: t.$spacing-xs;
+  font-size: t.$font-size-sm;
+}
+
+.composer {
+  display: flex;
+  gap: t.$spacing-sm;
+  padding-top: t.$spacing-md;
+}
+
+.input {
+  flex: 1;
+  resize: none;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: t.$radius-md;
+  padding: t.$spacing-sm t.$spacing-md;
+  font-family: inherit;
+}
+
+.send {
+  align-self: stretch;
+  padding: 0 t.$spacing-lg;
+  background: var(--accent);
+  color: hsl(222 30% 12%);
+  border: none;
+  border-radius: t.$radius-md;
+  font-weight: t.$font-weight-semibold;
+}
+
+.send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

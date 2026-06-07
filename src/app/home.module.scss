@@ -1,0 +1,47 @@
+@use '../styles/design-tokens' as t;
+
+.hero {
+  padding: t.$spacing-xl 0;
+}
+
+.title {
+  font-size: 2rem;
+  margin: 0 0 t.$spacing-md;
+}
+
+.lead {
+  max-width: 60ch;
+  color: var(--text-dim);
+  font-size: t.$font-size-lg;
+  margin: 0 0 t.$spacing-xl;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: t.$spacing-md;
+}
+
+.card {
+  display: block;
+  padding: t.$spacing-lg;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: t.$radius-lg;
+  color: var(--text);
+
+  h2 {
+    margin: 0 0 t.$spacing-xs;
+    font-size: t.$font-size-lg;
+  }
+  p {
+    margin: 0;
+    color: var(--text-dim);
+    font-size: t.$font-size-sm;
+  }
+
+  &:hover {
+    text-decoration: none;
+    border-color: var(--accent);
+  }
+}
