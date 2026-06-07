@@ -1,0 +1,36 @@
+# dependencies
+/node_modules
+
+# next
+/.next
+/out
+/build
+*.tsbuildinfo
+next-env.d.ts
+
+# env (the example file is tracked; real keys are not)
+.env
+.env*.local
+.env.production
+
+# generated at runtime
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+/data
+/reports
+
+# logs
+*.log
+/logs
+
+# test output
+/playwright-report
+/test-results
+
+# editor / os
+.DS_Store
+.vscode
+.idea
+*.pem
