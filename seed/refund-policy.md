@@ -20,14 +20,14 @@ This policy covers refunds for physical goods purchased through the store.
 
 §3.5 A customer with 3 or more prior refunds is escalated for human review before any further refund is approved.
 
-§3.6 A refund cannot exceed the amount the customer paid for the order.
+§3.6 A refund is capped at the amount the customer paid for the order. A request for more than that is refunded only up to the amount paid, never above it.
 
 ## 4. Outcomes
 
 Each request resolves to exactly one outcome:
 
 - **approve** the request meets every rule above.
-- **deny** the request violates an eligibility rule (§2.1, §2.2, §2.3, or §3.6).
+- **deny** the request violates an eligibility rule (§2.1, §2.2, or §2.3).
 - **escalate** the request is eligible but exceeds a limit that requires human review (§3.4 or §3.5).
 
 When more than one rule applies, a denial takes precedence over an escalation, and an escalation takes precedence over an approval.

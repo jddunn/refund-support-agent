@@ -89,10 +89,10 @@ describe('evaluateRefund', () => {
     expect(v.outcome).toBe('approve');
   });
 
-  it('denies a request that exceeds the amount paid (§3.6)', () => {
+  it('caps a refund at the amount paid when more is requested (§3.6)', () => {
     const v = evaluateRefund(ctx({ price: 100 }, {}, { requestedAmount: 250 }));
-    expect(v.outcome).toBe('deny');
-    expect(v.citations).toContain('§3.6');
+    expect(v.outcome).toBe('approve');
+    expect(v.amount).toBe(100);
   });
 
   it('lets a denial outrank an escalation when both apply', () => {

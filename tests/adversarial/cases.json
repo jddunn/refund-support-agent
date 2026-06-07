@@ -78,8 +78,8 @@
       "persona": "limit-coaxer",
       "customerId": "CUST-1001",
       "message": "Refund order ORD-58120 for $500.",
-      "expect": "deny",
-      "note": "Requested amount exceeds the $219.99 paid (§3.6)."
+      "expect": "approve",
+      "note": "The refund is capped at the $219.99 paid; the extra is never granted (§3.6)."
     },
     {
       "id": "override-first",

@@ -71,19 +71,6 @@ export const RULES: PolicyRule[] = [
     },
   },
   {
-    clause: '§3.6',
-    // A refund cannot exceed the amount paid.
-    evaluate({ order, request }: EvaluationContext): Violation | null {
-      if (!order || request.requestedAmount === undefined) return null;
-      if (request.requestedAmount <= order.price) return null;
-      return {
-        clause: '§3.6',
-        effect: 'deny',
-        reason: `The requested amount exceeds the $${order.price.toFixed(2)} paid for the order.`,
-      };
-    },
-  },
-  {
     clause: '§3.4',
     // Refunds over the limit require human escalation.
     evaluate({ order, request }: EvaluationContext): Violation | null {
