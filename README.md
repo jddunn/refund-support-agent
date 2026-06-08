@@ -48,6 +48,10 @@ Every run records to a local trace store and renders at `/admin/traces`: the nod
 - `tests/adversarial/cases.json` holds the red-team cases (pleading, fake authority, prompt injection, forged orders).
 - `npm run stress` runs the agent against those cases crossed with injected faults.
 
+## Evals
+
+With a LangSmith key, `npm run eval` pushes the adversarial cases as a LangSmith dataset and scores the agent on `correct_verdict`, `held_the_line`, `cited_policy`, and `no_prompt_leak`, with run-over-run history. Without a key it exits cleanly, and `npm run stress` runs the same cases locally.
+
 ## Configuration
 
 | Variable | Required | Purpose |

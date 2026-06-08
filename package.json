@@ -17,7 +17,8 @@
     "smoke": "tsx scripts/smoke.ts",
     "gen:data": "tsx scripts/generate-synthetic-data.ts",
     "gen:policy": "tsx scripts/generate-policy.ts",
-    "stress": "tsx scripts/stress.ts"
+    "stress": "tsx scripts/stress.ts",
+    "eval": "tsx scripts/eval-langsmith.ts"
   },
   "dependencies": {
     "@langchain/anthropic": "^1.4.0",
