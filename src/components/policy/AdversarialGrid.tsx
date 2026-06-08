@@ -23,13 +23,19 @@ export function AdversarialGrid() {
 
   useEffect(() => {
     fetch('/api/adversarial')
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed to load adversarial data');
+        return r.json();
+      })
       .then((data) => {
-        setCases(data.cases ?? []);
+        setCases(Array.isArray(data.cases) ? data.cases : []);
         const map: Record<string, ResultRow> = {};
-        const rows: ResultRow[] = data.results?.cases ?? [];
+        const rows: ResultRow[] = Array.isArray(data.results?.cases) ? data.results.cases : [];
         for (const row of rows) map[row.id] = row;
         setResults(map);
+      })
+      .catch((error) => {
+        console.error('Error loading adversarial data:', error);
       });
   }, []);
 

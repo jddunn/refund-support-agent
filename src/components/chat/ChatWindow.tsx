@@ -25,10 +25,12 @@ export function ChatWindow({ customers }: { customers: Customer[] }) {
   const [loading, setLoading] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
-  // Generate the conversation id on the client only, to avoid an SSR mismatch.
+  // Start a fresh conversation on mount and whenever the customer changes. The
+  // id is generated on the client only, to avoid an SSR mismatch.
   useEffect(() => {
+    setMessages([]);
     setConversationId(crypto.randomUUID());
-  }, []);
+  }, [customerId]);
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
@@ -69,6 +71,14 @@ export function ChatWindow({ customers }: { customers: Customer[] }) {
       event.preventDefault();
       void send();
     }
+  }
+
+  if (customers.length === 0) {
+    return (
+      <section className={styles.wrap}>
+        <p className={styles.empty}>No customers available.</p>
+      </section>
+    );
   }
 
   return (

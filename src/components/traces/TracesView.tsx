@@ -52,9 +52,14 @@ export function TracesView() {
   const [detail, setDetail] = useState<{ run: RunRow; events: EventRow[] } | null>(null);
 
   const loadRuns = useCallback(async () => {
-    const res = await fetch('/api/runs');
-    const data = await res.json();
-    setRuns(data.runs ?? []);
+    try {
+      const res = await fetch('/api/runs');
+      if (!res.ok) throw new Error('Failed to load runs');
+      const data = await res.json();
+      setRuns(data.runs ?? []);
+    } catch (error) {
+      console.error('Error loading runs:', error);
+    }
   }, []);
 
   useEffect(() => {
@@ -68,9 +73,16 @@ export function TracesView() {
     }
     let active = true;
     fetch(`/api/runs/${selected}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error('Failed to load run');
+        return r.json();
+      })
       .then((d) => {
         if (active) setDetail(d.error ? null : d);
+      })
+      .catch((error) => {
+        console.error('Error loading run:', error);
+        if (active) setDetail(null);
       });
     return () => {
       active = false;
