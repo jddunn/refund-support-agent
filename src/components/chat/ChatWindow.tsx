@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import type { ModelOption } from '@/agent/models';
 import styles from './ChatWindow.module.scss';
 
 export interface Customer {
@@ -17,8 +18,16 @@ interface Message {
   citations?: string[];
 }
 
-export function ChatWindow({ customers }: { customers: Customer[] }) {
+export function ChatWindow({
+  customers,
+  models,
+}: {
+  customers: Customer[];
+  /** When provided, an admin model selector is shown. Consumers get AUTO. */
+  models?: ModelOption[];
+}) {
   const [customerId, setCustomerId] = useState(customers[0]?.id ?? '');
+  const [model, setModel] = useState('auto');
   const [conversationId, setConversationId] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -46,7 +55,7 @@ export function ChatWindow({ customers }: { customers: Customer[] }) {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ conversationId, message: text, customerId }),
+        body: JSON.stringify({ conversationId, message: text, customerId, model }),
       });
       const data = await res.json();
       setMessages((prev) => [
@@ -99,6 +108,25 @@ export function ChatWindow({ customers }: { customers: Customer[] }) {
             </option>
           ))}
         </select>
+        {models && models.length > 0 && (
+          <>
+            <label htmlFor="model" className={styles.pickerLabel}>
+              Model
+            </label>
+            <select
+              id="model"
+              className={styles.picker}
+              value={model}
+              onChange={(event) => setModel(event.target.value)}
+            >
+              {models.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
       </div>
 
       <div
