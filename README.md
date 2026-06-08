@@ -12,9 +12,9 @@ cp .env.example .env        # add one provider key (Anthropic or OpenAI)
 npm run dev
 ```
 
-Open http://localhost:3000/chat to talk to the agent, and http://localhost:3000/admin/traces to watch what it did.
+Open http://localhost:3000/chat for the customer chat. The admin backend (traces, policy, and the model playground) is at http://localhost:3000/admin and is password-protected; the local default password is `admin`.
 
-The database seeds itself from `seed/` on first run. The only configuration is one API key.
+The database seeds itself from `seed/` on first run. The only required configuration is one model API key.
 
 ## How it works
 
@@ -27,10 +27,12 @@ The request flows through three layers with hard boundaries:
 A single turn runs:
 
 ```
-screen -> classify -> gather (tool calls) -> propose decision -> policy guard -> respond
+pick model -> screen -> agent (tool loop) -> propose decision -> policy guard -> respond
 ```
 
-`gather` calls read-only tools to fetch the customer, the order, and the policy. `propose decision` asks the model for a structured decision. `policy guard` re-checks that decision against the deterministic engine and overrides it if they disagree.
+The agent calls read-only tools to fetch the customer, the order, and the policy. `propose decision` asks the model for a structured decision. `policy guard` re-checks it against the deterministic engine and overrides the model if they disagree. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full diagram.
+
+The app has two surfaces: a clean customer chat (`/chat`, AUTO model) and a password-protected admin backend (`/admin`: traces, policy, and a model playground with the provider and model selector).
 
 ## Holding the policy line
 
@@ -94,8 +96,9 @@ Runs as a normal Node server (`npm run build && npm start`) on any container hos
 
 ## Docs
 
-- [Architecture](docs/ARCHITECTURE.md) covers the layers, the graph, and the guard.
-- [Debugging a run](docs/DEBUGGING.md) covers tracing a wrong decision to its root cause.
+- [Architecture](docs/ARCHITECTURE.md): the layers, the graph, model routing, guardrails, and the admin gate, with diagrams.
+- [Debugging a run](docs/DEBUGGING.md): tracing a wrong decision to its root cause.
+- [Why TypeScript](docs/STACK.md): the stack decision, and when Python would earn a place.
 
 ## Project layout
 

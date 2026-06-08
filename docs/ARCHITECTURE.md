@@ -11,19 +11,20 @@ Data          src/db                                 SQLite wrapper, schema, tra
 
 ## A single turn
 
-```
-POST /api/chat
-  -> runAgent()
-       screen      flag manipulation patterns (heuristic, non-blocking)
-       agent       call tools to gather the customer, order, and policy
-       tools       lookup_customer | get_order | get_policy | check_eligibility
-       propose     structured decision from the model (retry on invalid output)
-       guard       re-check the decision against the deterministic engine
-       respond     return the final, guard-approved message
-  -> { runId, decision, message, amount, citations }
+```mermaid
+flowchart LR
+  A[POST /api/chat] --> M[pick model]
+  M --> S[screen]
+  S --> AG[agent]
+  AG -->|tool calls| T[tools]
+  T --> AG
+  AG -->|done| P[propose decision]
+  P --> G[POLICY GUARD]
+  G --> R[respond + output guard]
+  R --> O[decision, message, citations]
 ```
 
-`agent` and `tools` loop until the model stops requesting tools. `propose` then asks for a decision that matches a fixed schema. `guard` re-runs the engine and overrides the model when they disagree.
+`pick model` chooses from the admin selector or the AUTO router. `agent` and `tools` loop until the model stops requesting tools. `propose` asks for a decision that matches a fixed schema, retrying on invalid output. `guard` re-runs the deterministic engine and overrides the model when they disagree. `respond` applies the output guardrail and returns the final, guard-approved message.
 
 ## The policy engine is the source of truth
 
@@ -42,9 +43,52 @@ The rules (`src/policy/rules.ts`) each cite the policy clause they enforce:
 
 The model proposes a decision and explains it. The guard (`policyGuard` in `src/agent/graph.ts`) re-runs the engine against the order actually resolved during the run and the customer id the request was made for, never the model's restatement of either. If the engine disagrees with the model, the engine wins and the response is rebuilt from the engine's verdict. The model cannot produce an approval the engine forbids, so pleading and prompt injection cannot move the outcome.
 
-## Provider-agnostic models
+## Models and routing
 
-`src/agent/model-factory.ts` picks Anthropic or OpenAI by whichever key is present and builds a model per role: a capable model for the decision loop, a cheap one for the input screen. The decision model is overridable with `AGENT_MODEL`. Cost is computed from each call's token usage against `src/obs/pricing.ts`.
+The model layer spans three providers and an AUTO router.
+
+- `src/agent/models.ts` is the catalog: the selectable options and which providers have a key.
+- `src/agent/model-factory.ts` builds a model for a turn. Provider is chosen by which key is present (Anthropic, then OpenAI, then OpenRouter); OpenRouter is reached through the OpenAI client pointed at its endpoint, so one key covers many models.
+- `src/agent/router.ts` is the AUTO router. The deterministic guard enforces policy regardless of model, so AUTO is a cost-and-quality optimization, not a safety mechanism: it spends a stronger model only on requests that look harder or adversarial, and records the reason in the trace.
+
+```mermaid
+flowchart TD
+  C{model choice} -->|a model id| D[build that model]
+  C -->|openrouter/auto| E[OpenRouter picks]
+  C -->|auto| R[difficulty router]
+  R -->|injection / long / multi-turn| ST[strong: Opus 4.8]
+  R -->|otherwise| FA[fast: Sonnet 4.6]
+```
+
+`AGENT_MODEL` overrides everything. The model selector lives only in the admin playground; consumers always run AUTO. Cost is computed from each call's token usage against `src/obs/pricing.ts`, and the chosen model plus the routing reason are recorded as a trace event.
+
+## Guardrails
+
+Three layers, in order of strength:
+
+1. **Input screen** (`src/agent/screen.ts`): cheap heuristics flag manipulation (instruction override, role injection, prompt exfiltration, fake authority). Non-blocking; it annotates the trace and feeds the router.
+2. **Policy guard** (the deterministic engine): the real protection. The model cannot emit an approval the engine forbids, so policy violations are stopped structurally, not by prompt wording.
+3. **Output guard** (`src/agent/guardrails.ts`): a final check that the reply does not echo the system prompt, replacing it with a safe message if it does.
+
+This is deliberately not a general guardrails framework. For a narrow policy domain a deterministic engine is stronger and more auditable than a model-based guard that can itself be prompted around. A heavier framework (content moderation, PII redaction) would be added only if the surface widened beyond refunds.
+
+## Admin and access
+
+Two route groups:
+
+- **Consumer** (`/`, `/chat`): the customer chat. AUTO model, no operator controls.
+- **Admin** (`/admin/*`): traces, the policy and red-team view, and the model playground.
+
+```mermaid
+flowchart LR
+  U[request] --> MW{admin path?}
+  MW -->|no| PG[serve]
+  MW -->|yes| SE{valid session?}
+  SE -->|yes| PG
+  SE -->|no| LO[redirect to /login]
+```
+
+`src/middleware.ts` gates every `/admin` path. Login posts the password to `/api/admin/login`, which compares it in constant time (`src/server/password.ts`) and sets a short-lived signed session cookie (`src/server/session.ts`: an HS256 JWT via jose, HttpOnly and Secure in production). The password lives in `ADMIN_PASSWORD`; for a multi-user system you would store a per-user salted hash instead.
 
 ## Observability
 
