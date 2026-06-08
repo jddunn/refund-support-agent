@@ -47,23 +47,50 @@ Every run records to a local trace store and renders at `/admin/traces`: the nod
 - `npm test` runs the unit suite. The policy engine and the guard are pure and need no API key.
 - `tests/adversarial/cases.json` holds the red-team cases (pleading, fake authority, prompt injection, forged orders).
 - `npm run stress` runs the agent against those cases crossed with injected faults.
+- `npm run typecheck`, `npm run lint`, and `npm run format:check` are the static gates (also run in CI).
 
 ## Evals
 
 With a LangSmith key, `npm run eval` pushes the adversarial cases as a LangSmith dataset and scores the agent on `correct_verdict`, `held_the_line`, `cited_policy`, and `no_prompt_leak`, with run-over-run history. Without a key it exits cleanly, and `npm run stress` runs the same cases locally.
 
-## Configuration
+## Configuration and secrets
+
+The only required secret is one model API key. Real keys are never committed: `.env.example` is the tracked template, and `.env` (gitignored) holds the real values.
+
+```bash
+cp .env.example .env   # then fill in ANTHROPIC_API_KEY (or OPENAI_API_KEY)
+```
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` | yes (one) | model provider |
-| `AGENT_MODEL` | no | override the decision-loop model |
-| `LANGSMITH_API_KEY` + `LANGSMITH_TRACING=true` | no | hosted tracing and evals |
+| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `OPENROUTER_API_KEY` | yes (one) | model provider, chosen by which key is present |
+| `AGENT_MODEL` | no | force a model, overriding the selector and the AUTO router |
+| `LANGSMITH_API_KEY` + `LANGSMITH_TRACING=true` | no | hosted tracing and `npm run eval` |
 | `FAULT_INJECT` | no | inject faults to exercise recovery |
+| `PORT` | no | server port (default 3000) |
+
+Where each environment reads its secrets:
+
+- **Local and Docker** read `.env`. Docker Compose loads it through `env_file`.
+- **Vercel:** Project Settings → Environment Variables, or `vercel env add ANTHROPIC_API_KEY`. Never put keys in the repo.
+- **GitHub Actions:** the CI here runs typecheck, lint, format, and the pure engine tests, so it needs no secrets. If you add a step that calls a model, store the key as a repository secret (Settings → Secrets and variables → Actions → New repository secret) and reference it as `${{ secrets.ANTHROPIC_API_KEY }}`. The app never reads secrets from the repo; the runtime injects them.
+
+## Docker
+
+```bash
+docker compose up --build
+```
+
+Builds the image, reads `.env`, and persists the database in a named volume. Then open http://localhost:3000/chat. Without Compose:
+
+```bash
+docker build -t refund-support-agent .
+docker run -p 3000:3000 --env-file .env refund-support-agent
+```
 
 ## Deploy
 
-Runs as a normal Node server (`npm run build && npm start`) on any container host with no code changes. On Vercel it runs as serverless functions: the database uses `/tmp`, so trace history resets on cold starts. Set `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY`) as an environment variable in the deploy.
+Runs as a normal Node server (`npm run build && npm start`) on any container host with no code changes, and ships a Dockerfile for container platforms. On Vercel it runs as serverless functions: the database uses `/tmp`, so trace history resets on cold starts. Set `ANTHROPIC_API_KEY` (or another provider key) as an environment variable in the deploy.
 
 ## Docs
 
