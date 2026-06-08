@@ -50,7 +50,9 @@ function lastHumanText(messages: BaseMessage[]): string {
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
     if (message.getType() === 'human') {
-      return typeof message.content === 'string' ? message.content : JSON.stringify(message.content);
+      return typeof message.content === 'string'
+        ? message.content
+        : JSON.stringify(message.content);
     }
   }
   return '';
@@ -85,7 +87,8 @@ const SAFE_DENY: Decision = {
   amount: 0,
   reasoning: 'The agent could not complete the request.',
   policyCitations: [],
-  customerMessage: "I'm sorry, I couldn't complete that request. Please try again or contact support.",
+  customerMessage:
+    "I'm sorry, I couldn't complete that request. Please try again or contact support.",
 };
 
 /**
@@ -97,7 +100,10 @@ const SAFE_DENY: Decision = {
 export async function runAgent(input: RunInput): Promise<RunResult> {
   const db = await getDb();
   const now = new Date();
-  const trace = new Trace(db, { conversationId: input.conversationId, customerId: input.customerId });
+  const trace = new Trace(db, {
+    conversationId: input.conversationId,
+    customerId: input.customerId,
+  });
   await trace.start();
 
   const usage: Usage = { input: 0, output: 0 };
@@ -149,13 +155,21 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
     let parsed: Decision | undefined;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const result = await structured.invoke([...state.messages, new HumanMessage(PROPOSE_INSTRUCTION)], {
-          tags: ['propose'],
-        });
+        const result = await structured.invoke(
+          [...state.messages, new HumanMessage(PROPOSE_INSTRUCTION)],
+          {
+            tags: ['propose'],
+          },
+        );
         accumulate(usage, result.raw);
         parsed = result.parsed as Decision;
         if (attempt > 0) {
-          await trace.event({ node: 'propose', kind: 'retry', output: { recovered: true }, retryCount: attempt });
+          await trace.event({
+            node: 'propose',
+            kind: 'retry',
+            output: { recovered: true },
+            retryCount: attempt,
+          });
         }
         break;
       } catch (err) {

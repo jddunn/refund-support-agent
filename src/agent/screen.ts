@@ -5,10 +5,19 @@
  * guard, not this screen.
  */
 const PATTERNS: Array<{ flag: string; re: RegExp }> = [
-  { flag: 'instruction_override', re: /\b(ignore|disregard|forget)\b.*\b(instruction|rule|policy|prompt)/i },
+  {
+    flag: 'instruction_override',
+    re: /\b(ignore|disregard|forget)\b.*\b(instruction|rule|policy|prompt)/i,
+  },
   { flag: 'role_injection', re: /\byou are now\b|\bact as\b|\bnew (persona|role)\b/i },
-  { flag: 'prompt_exfiltration', re: /\b(system prompt|your instructions|reveal your|repeat your)\b/i },
-  { flag: 'fake_authority', re: /\b(i am|i'm|this is)\s+(the\s+)?(ceo|manager|owner|admin|supervisor|founder)\b/i },
+  {
+    flag: 'prompt_exfiltration',
+    re: /\b(system prompt|your instructions|reveal your|repeat your)\b/i,
+  },
+  {
+    flag: 'fake_authority',
+    re: /\b(i am|i'm|this is)\s+(the\s+)?(ceo|manager|owner|admin|supervisor|founder)\b/i,
+  },
   { flag: 'urgency_pressure', re: /\b(right now|immediately|emergency|urgent|asap)\b/i },
 ];
 

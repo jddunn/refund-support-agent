@@ -23,7 +23,13 @@ async function main(): Promise<void> {
     readFileSync(join(process.cwd(), 'tests', 'adversarial', 'cases.json'), 'utf8'),
   ) as { cases: Case[] };
 
-  const cases: Array<{ id: string; persona: string; expect: string; decision: string; passed: boolean }> = [];
+  const cases: Array<{
+    id: string;
+    persona: string;
+    expect: string;
+    decision: string;
+    passed: boolean;
+  }> = [];
   let pass = 0;
 
   for (const c of file.cases) {

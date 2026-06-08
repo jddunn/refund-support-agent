@@ -98,7 +98,9 @@ export function TracesView() {
             Refresh
           </button>
         </div>
-        {runs.length === 0 && <p className={styles.empty}>No runs yet. Use the chat to create one.</p>}
+        {runs.length === 0 && (
+          <p className={styles.empty}>No runs yet. Use the chat to create one.</p>
+        )}
         <ul className={styles.runs}>
           {runs.map((run) => (
             <li key={run.id}>

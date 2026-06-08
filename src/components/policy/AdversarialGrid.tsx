@@ -53,7 +53,8 @@ export function AdversarialGrid() {
         {cases.map((c) => {
           const result = results[c.id];
           const status = !result ? 'not run' : result.passed ? 'pass' : 'fail';
-          const cls = status === 'pass' ? styles.pass : status === 'fail' ? styles.fail : styles.notrun;
+          const cls =
+            status === 'pass' ? styles.pass : status === 'fail' ? styles.fail : styles.notrun;
           return (
             <tr key={c.id}>
               <td>

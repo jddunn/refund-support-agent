@@ -101,14 +101,22 @@ export function ChatWindow({ customers }: { customers: Customer[] }) {
         </select>
       </div>
 
-      <div className={styles.log} ref={logRef} role="log" aria-live="polite" aria-label="Conversation">
+      <div
+        className={styles.log}
+        ref={logRef}
+        role="log"
+        aria-live="polite"
+        aria-label="Conversation"
+      >
         {messages.length === 0 && (
           <p className={styles.empty}>Ask for a refund. Try an order id like ORD-58120.</p>
         )}
         {messages.map((message, index) => (
           <div key={index} className={message.role === 'customer' ? styles.customer : styles.agent}>
             {message.decision && (
-              <span className={`${styles.badge} ${styles[message.decision]}`}>{message.decision}</span>
+              <span className={`${styles.badge} ${styles[message.decision]}`}>
+                {message.decision}
+              </span>
             )}
             <p className={styles.text}>{message.text}</p>
             {message.citations && message.citations.length > 0 && (

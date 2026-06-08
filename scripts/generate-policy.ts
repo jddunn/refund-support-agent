@@ -26,7 +26,9 @@ async function main(): Promise<void> {
       typeof result.content === 'string' ? result.content : JSON.stringify(result.content);
     const out = join(process.cwd(), 'seed', 'refund-policy.generated.md');
     writeFileSync(out, `${text}\n`);
-    console.log(`Wrote a policy draft to ${out}. The app enforces the curated seed/refund-policy.md.`);
+    console.log(
+      `Wrote a policy draft to ${out}. The app enforces the curated seed/refund-policy.md.`,
+    );
   } catch (err) {
     console.error(`Failed to generate policy: ${String(err)}`);
     process.exitCode = 1;

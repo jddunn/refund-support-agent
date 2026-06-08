@@ -78,7 +78,8 @@ export function buildTools(ctx: ToolContext) {
     },
     {
       name: 'get_policy',
-      description: 'Return the refund policy, or a single clause when a clause id like "§2.1" is provided.',
+      description:
+        'Return the refund policy, or a single clause when a clause id like "§2.1" is provided.',
       schema: z.object({ clause: z.string().optional().describe('Optional clause id, e.g. §2.1') }),
     },
   );

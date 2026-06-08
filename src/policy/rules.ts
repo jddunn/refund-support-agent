@@ -41,7 +41,11 @@ export const RULES: PolicyRule[] = [
     evaluate({ order, request }: EvaluationContext): Violation | null {
       if (!order) return null; // the missing-order case is handled above
       if (order.customerId === request.customerId) return null;
-      return { clause: '§2.3', effect: 'deny', reason: 'The order belongs to a different customer.' };
+      return {
+        clause: '§2.3',
+        effect: 'deny',
+        reason: 'The order belongs to a different customer.',
+      };
     },
   },
   {
