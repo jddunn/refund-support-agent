@@ -9,8 +9,14 @@ export const runtime = 'nodejs';
  * red-team suite has been run (it writes dated reports under reports/redteam/).
  */
 export async function GET() {
-  const casesPath = join(process.cwd(), 'tests', 'adversarial', 'cases.json');
-  const cases = JSON.parse(readFileSync(casesPath, 'utf8'));
+  let cases: unknown[] = [];
+  try {
+    const casesPath = join(process.cwd(), 'tests', 'adversarial', 'cases.json');
+    const parsed = JSON.parse(readFileSync(casesPath, 'utf8')) as { cases?: unknown[] };
+    cases = parsed.cases ?? [];
+  } catch {
+    return NextResponse.json({ error: 'Failed to load adversarial cases' }, { status: 500 });
+  }
 
   let results: unknown = null;
   const reportsDir = join(process.cwd(), 'reports', 'redteam');
@@ -20,9 +26,13 @@ export async function GET() {
       .sort();
     const latest = files.at(-1);
     if (latest) {
-      results = JSON.parse(readFileSync(join(reportsDir, latest), 'utf8'));
+      try {
+        results = JSON.parse(readFileSync(join(reportsDir, latest), 'utf8'));
+      } catch {
+        results = null; // treat a malformed report as unavailable
+      }
     }
   }
 
-  return NextResponse.json({ cases: cases.cases ?? [], results });
+  return NextResponse.json({ cases, results });
 }

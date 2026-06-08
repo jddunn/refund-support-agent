@@ -60,7 +60,16 @@ function renderPolicy(markdown: string): ReactNode[] {
 }
 
 export default function PolicyPage() {
-  const markdown = readFileSync(join(process.cwd(), 'seed', 'refund-policy.md'), 'utf8');
+  let markdown: string;
+  try {
+    markdown = readFileSync(join(process.cwd(), 'seed', 'refund-policy.md'), 'utf8');
+  } catch {
+    return (
+      <div className={styles.layout}>
+        <p>The refund policy could not be loaded.</p>
+      </div>
+    );
+  }
   return (
     <div className={styles.layout}>
       <article className={styles.policy}>{renderPolicy(markdown)}</article>
