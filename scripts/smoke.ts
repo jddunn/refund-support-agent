@@ -34,15 +34,21 @@ async function main(): Promise<void> {
 
   let pass = 0;
   for (const c of cases) {
-    const result = await runAgent({
-      conversationId: `smoke-${c.id}`,
-      message: c.message,
-      customerId: c.customerId,
-    });
-    const ok = result.decision.decision === c.expect;
+    let decision = 'error';
+    try {
+      const result = await runAgent({
+        conversationId: `smoke-${c.id}`,
+        message: c.message,
+        customerId: c.customerId,
+      });
+      decision = result.decision.decision;
+    } catch (err) {
+      decision = `error: ${String(err)}`;
+    }
+    const ok = decision === c.expect;
     if (ok) pass += 1;
     console.log(
-      `${ok ? 'PASS' : 'FAIL'}  ${c.id.padEnd(22)} expected=${c.expect.padEnd(9)} got=${result.decision.decision}`,
+      `${ok ? 'PASS' : 'FAIL'}  ${c.id.padEnd(22)} expected=${c.expect.padEnd(9)} got=${decision}`,
     );
   }
 
