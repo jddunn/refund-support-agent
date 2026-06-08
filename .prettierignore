@@ -5,6 +5,8 @@ reports
 out
 package-lock.json
 *.tsbuildinfo
+# Next.js rewrites tsconfig.json on every build, so it is not Prettier-enforced.
+tsconfig.json
 
 # Hand-authored docs and fixtures are maintained by hand, not reflowed.
 *.md
