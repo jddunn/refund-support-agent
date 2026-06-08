@@ -28,7 +28,7 @@ export interface Customer {
   email: string;
   /** Account creation date, ISO `YYYY-MM-DD`. */
   since: string;
-  /** Count of prior refunds. Drives the serial-refunder escalation (policy §3.5). */
+  /** Count of prior refunds. Drives the serial-refunder escalation (policy §3.2). */
   priorRefunds: number;
 }
 

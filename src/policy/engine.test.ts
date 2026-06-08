@@ -72,16 +72,16 @@ describe('evaluateRefund', () => {
     expect(v.outcome).toBe('approve');
   });
 
-  it('escalates a refund over $500 (§3.4)', () => {
+  it('escalates a refund over $500 (§3.1)', () => {
     const v = evaluateRefund(ctx({ price: 899 }, {}));
     expect(v.outcome).toBe('escalate');
-    expect(v.citations).toContain('§3.4');
+    expect(v.citations).toContain('§3.1');
   });
 
-  it('escalates a serial refunder with 3 prior refunds (§3.5)', () => {
+  it('escalates a serial refunder with 3 prior refunds (§3.2)', () => {
     const v = evaluateRefund(ctx({}, { priorRefunds: 3 }));
     expect(v.outcome).toBe('escalate');
-    expect(v.citations).toContain('§3.5');
+    expect(v.citations).toContain('§3.2');
   });
 
   it('does not escalate a customer with 2 prior refunds', () => {
@@ -89,18 +89,18 @@ describe('evaluateRefund', () => {
     expect(v.outcome).toBe('approve');
   });
 
-  it('caps a refund at the amount paid when more is requested (§3.6)', () => {
+  it('caps a refund at the amount paid when more is requested (§3.3)', () => {
     const v = evaluateRefund(ctx({ price: 100 }, {}, { requestedAmount: 250 }));
     expect(v.outcome).toBe('approve');
     expect(v.amount).toBe(100);
   });
 
   it('lets a denial outrank an escalation when both apply', () => {
-    // Final sale (deny §2.1) and over the limit (escalate §3.4) at once.
+    // Final sale (deny §2.1) and over the limit (escalate §3.1) at once.
     const v = evaluateRefund(ctx({ finalSale: true, price: 640 }, {}));
     expect(v.outcome).toBe('deny');
     expect(v.citations).toContain('§2.1');
-    expect(v.citations).toContain('§3.4');
+    expect(v.citations).toContain('§3.1');
   });
 
   it('caps the permitted amount at the price on an escalate', () => {

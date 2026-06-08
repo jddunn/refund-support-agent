@@ -27,7 +27,7 @@ export function evaluateRefund(ctx: EvaluationContext): PolicyVerdict {
   else if (hasEscalate) outcome = 'escalate';
 
   // Permitted amount: nothing on a deny, otherwise the requested figure capped
-  // at the price paid (§3.6). A human finalizes the figure on an escalate.
+  // at the price paid (§3.3). A human finalizes the figure on an escalate.
   const price = ctx.order?.price ?? 0;
   const requested = ctx.request.requestedAmount ?? price;
   const amount = outcome === 'deny' ? 0 : Math.min(requested, price);

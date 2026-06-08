@@ -34,9 +34,9 @@ The rules (`src/policy/rules.ts`) each cite the policy clause they enforce:
 - §2.1 final-sale items are never refundable (deny)
 - §2.2 the order must be within the 30-day return window (deny)
 - §2.3 the order must exist and belong to the customer (deny)
-- §3.4 refunds over $500 require human escalation (escalate)
-- §3.5 customers with three or more prior refunds are escalated (escalate)
-- §3.6 the refund is capped at the amount paid (enforced as a cap, not a denial)
+- §3.1 refunds over $500 require human escalation (escalate)
+- §3.2 customers with three or more prior refunds are escalated (escalate)
+- §3.3 the refund is capped at the amount paid (enforced as a cap, not a denial)
 
 ## The guard
 

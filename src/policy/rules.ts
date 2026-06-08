@@ -71,26 +71,26 @@ export const RULES: PolicyRule[] = [
     },
   },
   {
-    clause: '§3.4',
+    clause: '§3.1',
     // Refunds over the limit require human escalation.
     evaluate({ order, request }: EvaluationContext): Violation | null {
       if (!order) return null;
       const amount = request.requestedAmount ?? order.price;
       if (amount <= ESCALATION_LIMIT_USD) return null;
       return {
-        clause: '§3.4',
+        clause: '§3.1',
         effect: 'escalate',
         reason: `Refunds over $${ESCALATION_LIMIT_USD} require human review.`,
       };
     },
   },
   {
-    clause: '§3.5',
+    clause: '§3.2',
     // Serial refunders are escalated for review.
     evaluate({ customer }: EvaluationContext): Violation | null {
       if (!customer || customer.priorRefunds < SERIAL_REFUND_THRESHOLD) return null;
       return {
-        clause: '§3.5',
+        clause: '§3.2',
         effect: 'escalate',
         reason: `The customer has ${customer.priorRefunds} prior refunds and requires human review.`,
       };

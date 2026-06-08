@@ -29,7 +29,7 @@ sqlite3 data/refund-agent.sqlite \
 
 ## Worked example: a wrong escalation
 
-The adversarial suite caught a real one. The `serial-refunder` case (a customer with four prior refunds) returned `deny`, but policy says escalate (§3.5).
+The adversarial suite caught a real one. The `serial-refunder` case (a customer with four prior refunds) returned `deny`, but policy says escalate (§3.2).
 
 The trace showed the cause in two events:
 
