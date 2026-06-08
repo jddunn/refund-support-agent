@@ -1,0 +1,58 @@
+@use '../../styles/design-tokens' as t;
+
+.wrap {
+  max-width: 360px;
+  margin: t.$spacing-xl auto;
+}
+
+.title {
+  font-size: t.$font-size-heading;
+  margin: 0 0 t.$spacing-xs;
+}
+
+.hint {
+  color: var(--text-dim);
+  font-size: t.$font-size-sm;
+  margin: 0 0 t.$spacing-lg;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: t.$spacing-sm;
+}
+
+.label {
+  font-size: t.$font-size-sm;
+  color: var(--text-dim);
+}
+
+.input {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: t.$radius-md;
+  padding: t.$spacing-sm t.$spacing-md;
+  font: inherit;
+}
+
+.error {
+  color: var(--deny);
+  font-size: t.$font-size-sm;
+  margin: 0;
+}
+
+.button {
+  margin-top: t.$spacing-sm;
+  padding: t.$spacing-sm t.$spacing-lg;
+  background: var(--accent);
+  color: hsl(222 30% 12%);
+  border: none;
+  border-radius: t.$radius-md;
+  font-weight: t.$font-weight-semibold;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

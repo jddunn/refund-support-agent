@@ -12,16 +12,12 @@ export default function Home() {
       </p>
       <div className={styles.cards}>
         <Link href="/chat" className={styles.card}>
-          <h2>Chat</h2>
-          <p>Talk to the agent and request a refund.</p>
+          <h2>Customer chat</h2>
+          <p>Talk to the refund agent and request a refund.</p>
         </Link>
-        <Link href="/admin/traces" className={styles.card}>
-          <h2>Traces</h2>
-          <p>Every run&apos;s reasoning, tool calls, tokens, cost, and latency.</p>
-        </Link>
-        <Link href="/admin/policy" className={styles.card}>
-          <h2>Policy</h2>
-          <p>The refund policy and the red-team results.</p>
+        <Link href="/login" className={styles.card}>
+          <h2>Admin</h2>
+          <p>Traces, policy, and the model playground. Staff login.</p>
         </Link>
       </div>
     </section>
