@@ -1,0 +1,11 @@
+.next
+node_modules
+data
+reports
+out
+package-lock.json
+*.tsbuildinfo
+
+# Hand-authored docs and fixtures are maintained by hand, not reflowed.
+*.md
+seed/**
