@@ -2,61 +2,101 @@ import { ChatAnthropic } from '@langchain/anthropic';
 import { ChatOpenAI } from '@langchain/openai';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { priceFor } from '@/obs/pricing';
+import { availableProviders, type Provider } from './models';
+import { routeModel, type RouteContext } from './router';
 
-/** Which job a model is being built for. */
-export type ModelRole = 'agent' | 'screen';
-
-/** A model plus the metadata the trace layer needs to compute cost. */
+/** A model plus the metadata the trace layer needs to compute cost and explain routing. */
 export interface ModelHandle {
   model: BaseChatModel;
   id: string;
-  provider: 'anthropic' | 'openai';
+  provider: Provider;
   pricePer1kInput: number;
   pricePer1kOutput: number;
+  /** Why this model was chosen (set when AUTO routed, or on a fallback). */
+  routeReason?: string;
+}
+
+const MAX_TOKENS = 2048;
+
+/** Per-provider model ids for each tier the AUTO router can pick. */
+const TIERS: Record<Provider, { fast: string; strong: string }> = {
+  anthropic: { fast: 'claude-sonnet-4-6', strong: 'claude-opus-4-8' },
+  openai: { fast: 'gpt-4.1', strong: 'gpt-4.1' },
+  openrouter: { fast: 'anthropic/claude-sonnet-4.6', strong: 'anthropic/claude-opus-4' },
+};
+
+function primaryProvider(): Provider {
+  const available = availableProviders();
+  if (available.length === 0) {
+    throw new Error(
+      'No model provider configured. Set ANTHROPIC_API_KEY, OPENAI_API_KEY, or OPENROUTER_API_KEY.',
+    );
+  }
+  return available[0];
+}
+
+/** Infer the provider for a concrete model id. */
+function providerOf(modelId: string): Provider {
+  if (modelId.startsWith('claude-')) return 'anthropic';
+  if (modelId.startsWith('gpt-') || modelId.startsWith('o1') || modelId.startsWith('o3')) {
+    return 'openai';
+  }
+  return 'openrouter';
+}
+
+function buildModel(modelId: string, provider: Provider): BaseChatModel {
+  if (provider === 'anthropic') {
+    return new ChatAnthropic({ model: modelId, maxTokens: MAX_TOKENS });
+  }
+  if (provider === 'openrouter') {
+    // OpenRouter speaks the OpenAI API, so the OpenAI client points at it.
+    return new ChatOpenAI({
+      model: modelId,
+      maxTokens: MAX_TOKENS,
+      apiKey: process.env.OPENROUTER_API_KEY,
+      configuration: { baseURL: 'https://openrouter.ai/api/v1' },
+    });
+  }
+  return new ChatOpenAI({ model: modelId, maxTokens: MAX_TOKENS });
 }
 
 /**
- * Per-role defaults. The decision loop uses a fast, capable model; the input
- * screen uses a cheaper one because it only classifies. Override the decision
- * model with the AGENT_MODEL environment variable.
+ * Build the model for a turn from the UI choice (or AUTO) and the route context.
+ * `AGENT_MODEL` in the environment overrides everything. A choice whose provider
+ * has no key falls back to the primary provider's fast model.
  */
-const DEFAULT_MODELS = {
-  anthropic: { agent: 'claude-sonnet-4-6', screen: 'claude-haiku-4-5' },
-  openai: { agent: 'gpt-4.1', screen: 'gpt-4o-mini' },
-} as const;
+export function makeAgentModel(choice: string, ctx: RouteContext): ModelHandle {
+  const requested = process.env.AGENT_MODEL || choice || 'auto';
 
-const MAX_TOKENS: Record<ModelRole, number> = { agent: 2048, screen: 512 };
+  let id: string;
+  let provider: Provider;
+  let routeReason: string | undefined;
 
-/** Pick the provider by whichever key is present (Anthropic first). */
-function pickProvider(): 'anthropic' | 'openai' {
-  if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
-  if (process.env.OPENAI_API_KEY) return 'openai';
-  throw new Error('No model provider configured. Set ANTHROPIC_API_KEY or OPENAI_API_KEY.');
-}
+  if (requested === 'auto') {
+    const route = routeModel(ctx);
+    provider = primaryProvider();
+    id = TIERS[provider][route.tier];
+    routeReason = `auto: ${route.reason} -> ${id}`;
+  } else if (requested === 'openrouter/auto') {
+    provider = 'openrouter';
+    id = 'openrouter/auto';
+  } else {
+    provider = providerOf(requested);
+    id = requested;
+    if (!availableProviders().includes(provider)) {
+      provider = primaryProvider();
+      id = TIERS[provider].fast;
+      routeReason = `requested model unavailable; using ${id}`;
+    }
+  }
 
-/**
- * Build a model for a role. Provider is chosen by which key is present, so the
- * app runs against either Anthropic or OpenAI with no code change and no
- * wrong-provider failure mode.
- */
-export function makeModel(role: ModelRole): ModelHandle {
-  const provider = pickProvider();
-  const id =
-    role === 'agent' && process.env.AGENT_MODEL
-      ? process.env.AGENT_MODEL
-      : DEFAULT_MODELS[provider][role];
   const price = priceFor(id);
-
-  const model: BaseChatModel =
-    provider === 'anthropic'
-      ? new ChatAnthropic({ model: id, maxTokens: MAX_TOKENS[role] })
-      : new ChatOpenAI({ model: id, maxTokens: MAX_TOKENS[role] });
-
   return {
-    model,
+    model: buildModel(id, provider),
     id,
     provider,
     pricePer1kInput: price.input,
     pricePer1kOutput: price.output,
+    routeReason,
   };
 }

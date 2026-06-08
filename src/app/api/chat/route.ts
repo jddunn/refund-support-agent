@@ -9,6 +9,7 @@ const Body = z.object({
   conversationId: z.string().min(1),
   message: z.string().min(1),
   customerId: z.string().optional(),
+  model: z.string().optional(),
 });
 
 /** Run one customer turn through the agent and return its decision. */

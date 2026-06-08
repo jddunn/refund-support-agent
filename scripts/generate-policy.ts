@@ -8,11 +8,11 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { HumanMessage } from '@langchain/core/messages';
-import { makeModel } from '@/agent/model-factory';
+import { makeAgentModel } from '@/agent/model-factory';
 
 async function main(): Promise<void> {
   try {
-    const { model } = makeModel('agent');
+    const { model } = makeAgentModel('auto', { injectionFlags: [], message: '', turnCount: 0 });
     const result = await model.invoke([
       new HumanMessage(
         'Write a short e-commerce refund policy in markdown with numbered clauses (for example §2.1) covering: ' +

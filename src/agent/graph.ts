@@ -4,9 +4,10 @@ import { AIMessage, HumanMessage, SystemMessage, type BaseMessage } from '@langc
 import { RefundState, type RefundStateType } from './state';
 import { DecisionSchema, type Decision } from './schema';
 import { AGENT_SYSTEM_PROMPT, PROPOSE_INSTRUCTION } from './prompts';
-import { makeModel } from './model-factory';
+import { makeAgentModel } from './model-factory';
 import { buildTools } from './tools';
 import { screenInput } from './screen';
+import { guardOutput } from './guardrails';
 import { getDb } from '@/db';
 import { findCustomer, findOrder } from '@/db/queries';
 import { evaluateRefund } from '@/policy/engine';
@@ -24,6 +25,8 @@ export interface RunInput {
   customerId?: string;
   /** Prior turns, if the conversation is ongoing. */
   history?: BaseMessage[];
+  /** Model choice from the UI: 'auto', a model id, or 'openrouter/auto'. */
+  model?: string;
 }
 
 export interface RunResult {
@@ -107,7 +110,21 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
   await trace.start();
 
   const usage: Usage = { input: 0, output: 0 };
-  const handle = makeModel('agent');
+
+  // Pick the model up front from the UI choice (or AUTO), reusing the injection
+  // screen so the router can react to manipulation signals.
+  const injectionFlags = screenInput(input.message);
+  const turnCount = Math.ceil((input.history?.length ?? 0) / 2);
+  const handle = makeAgentModel(input.model ?? 'auto', {
+    injectionFlags,
+    message: input.message,
+    turnCount,
+  });
+  await trace.event({
+    node: 'model',
+    kind: 'node',
+    output: { id: handle.id, provider: handle.provider, reason: handle.routeReason },
+  });
 
   // The order resolved during the run, captured from the tools so the guard can
   // re-validate even when the model leaves the order out of its decision.
@@ -250,12 +267,20 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
 
   async function respondNode(state: RefundStateType) {
     const decision = state.proposed ?? SAFE_DENY;
+    const guarded = guardOutput(decision.customerMessage);
+    const finalDecision = guarded.blocked
+      ? { ...decision, customerMessage: guarded.message }
+      : decision;
     await trace.event({
       node: 'respond',
       kind: 'node',
-      output: { decision: decision.decision, message: decision.customerMessage },
+      output: {
+        decision: finalDecision.decision,
+        message: finalDecision.customerMessage,
+        outputGuard: guarded.blocked,
+      },
     });
-    return { messages: [new AIMessage(decision.customerMessage)] };
+    return { messages: [new AIMessage(finalDecision.customerMessage)], proposed: finalDecision };
   }
 
   function shouldContinue(state: RefundStateType): 'tools' | 'propose' {

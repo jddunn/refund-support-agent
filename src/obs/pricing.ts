@@ -20,6 +20,9 @@ export const PRICING: Record<string, ModelPrice> = {
   'gpt-4.1': { input: 0.002, output: 0.008 },
   'gpt-4o': { input: 0.0025, output: 0.01 },
   'gpt-4o-mini': { input: 0.00015, output: 0.0006 },
+  // OpenRouter ids mapped to the underlying model's list price.
+  'anthropic/claude-sonnet-4.6': { input: 0.003, output: 0.015 },
+  'anthropic/claude-opus-4': { input: 0.005, output: 0.025 },
 };
 
 /** Price for a model id, or zero when the model is unknown. */

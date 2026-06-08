@@ -8,7 +8,7 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
-import { makeModel } from '@/agent/model-factory';
+import { makeAgentModel } from '@/agent/model-factory';
 
 const Schema = z.object({
   customers: z.array(
@@ -36,7 +36,7 @@ const Schema = z.object({
 async function main(): Promise<void> {
   try {
     const today = new Date().toISOString().slice(0, 10);
-    const { model } = makeModel('agent');
+    const { model } = makeAgentModel('auto', { injectionFlags: [], message: '', turnCount: 0 });
     const structured = model.withStructuredOutput(Schema, { name: 'crm' });
 
     const data = await structured.invoke(
