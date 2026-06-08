@@ -57,6 +57,11 @@ Every run records to a local trace store and renders at `/admin/traces`: the nod
 | `LANGSMITH_API_KEY` + `LANGSMITH_TRACING=true` | no | hosted tracing and evals |
 | `FAULT_INJECT` | no | inject faults to exercise recovery |
 
+## Docs
+
+- [Architecture](docs/ARCHITECTURE.md) covers the layers, the graph, and the guard.
+- [Debugging a run](docs/DEBUGGING.md) covers tracing a wrong decision to its root cause.
+
 ## Project layout
 
 ```
