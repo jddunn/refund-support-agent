@@ -46,7 +46,9 @@ let instance: Db | null = null;
 export async function getDb(): Promise<Db> {
   if (instance) return instance;
 
-  const dataDir = join(process.cwd(), 'data');
+  // Serverless platforms (e.g. Vercel) only allow writes under /tmp.
+  const writableRoot = process.env.VERCEL ? '/tmp' : process.cwd();
+  const dataDir = join(writableRoot, 'data');
   mkdirSync(dataDir, { recursive: true });
 
   const handle = new Database(join(dataDir, 'refund-agent.sqlite'));

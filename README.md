@@ -61,6 +61,10 @@ With a LangSmith key, `npm run eval` pushes the adversarial cases as a LangSmith
 | `LANGSMITH_API_KEY` + `LANGSMITH_TRACING=true` | no | hosted tracing and evals |
 | `FAULT_INJECT` | no | inject faults to exercise recovery |
 
+## Deploy
+
+Runs as a normal Node server (`npm run build && npm start`) on any container host with no code changes. On Vercel it runs as serverless functions: the database uses `/tmp`, so trace history resets on cold starts. Set `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY`) as an environment variable in the deploy.
+
 ## Docs
 
 - [Architecture](docs/ARCHITECTURE.md) covers the layers, the graph, and the guard.
