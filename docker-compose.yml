@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    image: refund-support-agent
+    ports:
+      - '3000:3000'
+    # Loads ANTHROPIC_API_KEY (and any other vars) from the local .env file.
+    env_file:
+      - .env
+    volumes:
+      # Persist the SQLite database (CRM data + run traces) across restarts.
+      - app-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  app-data:

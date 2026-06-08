@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // Emit a self-contained server for small Docker images and simple hosting.
+  output: 'standalone',
   // better-sqlite3 is a native addon. Keep it out of the bundler so the
   // server loads it directly at runtime.
   serverExternalPackages: ['better-sqlite3'],
