@@ -91,3 +91,96 @@ export async function PATCH(req: NextRequest) {
   }
   return NextResponse.json({ ok: true });
 }
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+const CreateSchema = z.discriminatedUnion('table', [
+  z.object({
+    table: z.literal('customers'),
+    id: z.string().regex(/^CUST-\d{3,6}$/),
+    name: z.string().min(1).max(80),
+    email: z.string().email().max(120),
+    since: z.string().regex(DATE_RE),
+    priorRefunds: z.number().int().min(0).max(99),
+  }),
+  z.object({
+    table: z.literal('orders'),
+    id: z.string().regex(/^ORD-\d{3,6}$/),
+    customerId: z.string().min(1),
+    item: z.string().min(1).max(120),
+    category: z.string().min(1).max(40),
+    price: z.number().positive().max(1_000_000),
+    finalSale: z.boolean(),
+    purchasedAt: z.string().regex(DATE_RE),
+    status: z.enum(['delivered', 'shipped', 'processing']),
+  }),
+]);
+
+/** Add a customer or an order. Admin session required. */
+export async function POST(req: NextRequest) {
+  if (!(await verifySession(req.cookies.get(SESSION_COOKIE)?.value))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const parsed = CreateSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid record' }, { status: 400 });
+  }
+  const db = await getDb();
+  const row = parsed.data;
+
+  const exists = await db.get(`SELECT id FROM ${row.table} WHERE id = ?`, [row.id]);
+  if (exists) return NextResponse.json({ error: `${row.id} already exists` }, { status: 409 });
+
+  if (row.table === 'customers') {
+    await db.run(
+      'INSERT INTO customers (id, name, email, since, prior_refunds) VALUES (?, ?, ?, ?, ?)',
+      [row.id, row.name, row.email, row.since, row.priorRefunds],
+    );
+  } else {
+    const customer = await db.get('SELECT id FROM customers WHERE id = ?', [row.customerId]);
+    if (!customer) {
+      return NextResponse.json({ error: `${row.customerId} does not exist` }, { status: 400 });
+    }
+    await db.run(
+      `INSERT INTO orders (id, customer_id, item, category, price, final_sale, purchased_at, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        row.id,
+        row.customerId,
+        row.item,
+        row.category,
+        row.price,
+        row.finalSale ? 1 : 0,
+        row.purchasedAt,
+        row.status,
+      ],
+    );
+  }
+  return NextResponse.json({ ok: true });
+}
+
+const DeleteSchema = z.object({
+  table: z.enum(['customers', 'orders']),
+  id: z.string().min(1),
+});
+
+/** Delete a customer (and their orders) or a single order. Admin session required. */
+export async function DELETE(req: NextRequest) {
+  if (!(await verifySession(req.cookies.get(SESSION_COOKIE)?.value))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const parsed = DeleteSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid delete' }, { status: 400 });
+  }
+  const db = await getDb();
+  const { table, id } = parsed.data;
+  if (table === 'customers') {
+    await db.run('DELETE FROM orders WHERE customer_id = ?', [id]);
+  }
+  const result = await db.run(`DELETE FROM ${table} WHERE id = ?`, [id]);
+  if (result.changes === 0) {
+    return NextResponse.json({ error: 'Row not found' }, { status: 404 });
+  }
+  return NextResponse.json({ ok: true });
+}

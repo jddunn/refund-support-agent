@@ -118,3 +118,38 @@
   accent-color: var(--accent);
   cursor: pointer;
 }
+
+.trash {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: t.$radius-sm;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-dim);
+  transition:
+    color t.$transition,
+    background t.$transition;
+
+  &:hover {
+    color: var(--deny);
+    background: var(--deny-soft);
+  }
+}
+
+.addRow td {
+  background: var(--surface-inset);
+}
+
+.add {
+  padding: t.$spacing-xs t.$spacing-md;
+  border-radius: t.$radius-md;
+  border: none;
+  background: var(--accent-grad);
+  color: var(--on-accent);
+  font-size: t.$font-size-sm;
+  font-weight: t.$font-weight-semibold;
+  white-space: nowrap;
+}
