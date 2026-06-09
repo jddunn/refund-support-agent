@@ -37,12 +37,29 @@ function badgeClass(decision: string | null): string {
   return styles.neutral;
 }
 
+/** Parse a stored JSON string into an object, or null. */
+function parse(json: string | null): Record<string, unknown> | null {
+  if (!json) return null;
+  try {
+    const value = JSON.parse(json);
+    return value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
 function pretty(json: string): string {
   try {
     return JSON.stringify(JSON.parse(json), null, 2);
   } catch {
     return json;
   }
+}
+
+/** Waterfall bar width, bucketed to 10% steps so it needs no inline style. */
+function widthClass(duration: number, max: number): string {
+  const bucket = max > 0 ? Math.min(10, Math.max(1, Math.round((duration / max) * 10))) : 1;
+  return styles[`w${bucket * 10}`] ?? styles.w10;
 }
 
 export function TracesView() {
@@ -88,6 +105,13 @@ export function TracesView() {
       active = false;
     };
   }, [selected]);
+
+  const events = detail?.events ?? [];
+  const startMs = detail?.run.startedAtMs ?? 0;
+  const durations = events.map((e, i) =>
+    Math.max(0, e.atMs - (i > 0 ? events[i - 1].atMs : startMs)),
+  );
+  const maxDur = Math.max(1, ...durations);
 
   return (
     <div className={styles.layout}>
@@ -141,11 +165,15 @@ export function TracesView() {
                   <dt>latency</dt>
                   <dd>{detail.run.latencyMs}ms</dd>
                 </div>
+                <div>
+                  <dt>steps</dt>
+                  <dd>{events.length}</dd>
+                </div>
               </dl>
             </div>
             <ol className={styles.timeline}>
-              {detail.events.map((event) => (
-                <TraceEvent key={event.id} event={event} render={pretty} />
+              {events.map((event, i) => (
+                <TraceEvent key={event.id} event={event} duration={durations[i]} maxDur={maxDur} />
               ))}
             </ol>
           </>
@@ -155,9 +183,27 @@ export function TracesView() {
   );
 }
 
-function TraceEvent({ event, render }: { event: EventRow; render: (json: string) => string }) {
+function TraceEvent({
+  event,
+  duration,
+  maxDur,
+}: {
+  event: EventRow;
+  duration: number;
+  maxDur: number;
+}) {
   const [open, setOpen] = useState(false);
   const hasIO = Boolean(event.inputJson || event.outputJson);
+  const out = parse(event.outputJson);
+  const inp = parse(event.inputJson);
+
+  const flags = event.node === 'screen' && Array.isArray(out?.flags) ? (out.flags as string[]) : [];
+  const isModel = event.node === 'model' && typeof out?.id === 'string';
+  const isGuard = event.kind === 'guard';
+  const guardModel = isGuard && typeof inp?.proposed === 'string' ? (inp.proposed as string) : null;
+  const guardEngine = isGuard && typeof out?.engine === 'string' ? (out.engine as string) : null;
+  const overridden = isGuard && out?.overridden === true;
+
   return (
     <li className={styles.event}>
       <button
@@ -166,20 +212,58 @@ function TraceEvent({ event, render }: { event: EventRow; render: (json: string)
         aria-expanded={open}
         disabled={!hasIO}
       >
-        <span className={styles.kind}>{event.kind}</span>
+        <span className={`${styles.kind} ${styles[`kind_${event.kind}`] ?? ''}`}>{event.kind}</span>
         <span className={styles.node}>{event.node}</span>
+        <span className={styles.bar}>
+          <span className={`${styles.barFill} ${widthClass(duration, maxDur)}`} />
+        </span>
+        <span className={styles.dur}>{duration}ms</span>
         {event.retryCount > 0 && <span className={styles.retry}>retry ×{event.retryCount}</span>}
       </button>
+
+      {flags.length > 0 && (
+        <div className={styles.flags}>
+          {flags.map((flag) => (
+            <span key={flag} className={styles.flag}>
+              ⚠ {flag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {isModel && (
+        <div className={styles.modelLine}>
+          <span className={styles.modelId}>{String(out?.id)}</span>
+          {typeof out?.tier === 'string' && <span className={styles.modelTier}>{out.tier}</span>}
+          {typeof out?.reason === 'string' && (
+            <span className={styles.modelReason}>{out.reason}</span>
+          )}
+        </div>
+      )}
+
+      {guardModel && (
+        <div className={`${styles.guardDiff} ${overridden ? styles.guardOverridden : ''}`}>
+          <span className={styles.guardSide}>
+            model <b>{guardModel}</b>
+          </span>
+          <span className={styles.guardArrow}>→</span>
+          <span className={styles.guardSide}>
+            engine <b>{guardEngine ?? '—'}</b>
+          </span>
+          <span className={styles.guardVerdict}>{overridden ? 'overridden' : 'confirmed'}</span>
+        </div>
+      )}
+
       {open && hasIO && (
         <div className={styles.io}>
           {event.inputJson && (
             <pre className={styles.pre}>
-              <code>{render(event.inputJson)}</code>
+              <code>{pretty(event.inputJson)}</code>
             </pre>
           )}
           {event.outputJson && (
             <pre className={styles.pre}>
-              <code>{render(event.outputJson)}</code>
+              <code>{pretty(event.outputJson)}</code>
             </pre>
           )}
         </div>
