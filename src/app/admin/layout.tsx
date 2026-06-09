@@ -4,9 +4,9 @@ import { AdminNav } from '@/components/AdminNav';
 // Every /admin page is gated by middleware and shares the admin navigation.
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
-    <>
+    <div data-surface="admin">
       <AdminNav />
       {children}
-    </>
+    </div>
   );
 }

@@ -14,25 +14,46 @@
 
   th {
     color: var(--text-dim);
-    font-weight: t.$font-weight-medium;
+    font-weight: t.$font-weight-semibold;
+    font-size: t.$font-size-xs;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  tbody tr {
+    transition: background t.$transition;
+  }
+  tbody tr:hover {
+    background: var(--surface-inset);
+  }
+
+  td:first-child {
+    font-family: t.$font-mono;
+    font-size: t.$font-size-xs;
   }
 }
 
 .status {
   display: inline-block;
-  padding: 1px t.$spacing-sm;
+  padding: 2px t.$spacing-sm;
   border-radius: t.$radius-pill;
-  font-size: 0.72rem;
-  font-weight: t.$font-weight-semibold;
-  color: hsl(222 30% 10%);
+  font-size: t.$font-size-xs;
+  font-weight: t.$font-weight-bold;
+  border: 1px solid transparent;
 }
 
 .pass {
-  background: var(--approve);
+  background: var(--approve-soft);
+  color: var(--approve);
+  border-color: var(--approve);
 }
 .fail {
-  background: var(--deny);
+  background: var(--deny-soft);
+  color: var(--deny);
+  border-color: var(--deny);
 }
 .notrun {
-  background: var(--text-dim);
+  background: var(--surface-inset);
+  color: var(--text-dim);
+  border-color: var(--border);
 }

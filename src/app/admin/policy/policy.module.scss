@@ -1,4 +1,5 @@
 @use '../../../styles/design-tokens' as t;
+@use '../../../styles/surfaces' as s;
 
 .layout {
   display: grid;
@@ -8,10 +9,9 @@
 }
 
 .policy {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: t.$radius-lg;
   padding: t.$spacing-lg;
+  border-radius: t.$radius-lg;
+  @include s.glass;
 
   h1 {
     font-size: t.$font-size-heading;
@@ -20,6 +20,7 @@
   h2 {
     font-size: t.$font-size-lg;
     margin: t.$spacing-lg 0 t.$spacing-sm;
+    color: var(--text);
   }
   p {
     margin: 0 0 t.$spacing-sm;
@@ -36,6 +37,9 @@
 }
 
 .results {
+  position: sticky;
+  top: t.$spacing-lg;
+
   h2 {
     font-size: t.$font-size-heading;
     margin: 0 0 t.$spacing-xs;
@@ -48,7 +52,10 @@
   margin: 0 0 t.$spacing-md;
 
   code {
-    background: var(--surface-2);
+    font-family: t.$font-mono;
+    font-size: t.$font-size-xs;
+    background: var(--surface-inset);
+    border: 1px solid var(--border);
     padding: 1px 6px;
     border-radius: t.$radius-sm;
   }
@@ -57,5 +64,8 @@
 @media (max-width: 820px) {
   .layout {
     grid-template-columns: 1fr;
+  }
+  .results {
+    position: static;
   }
 }

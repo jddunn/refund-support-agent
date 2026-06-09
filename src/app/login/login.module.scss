@@ -1,8 +1,12 @@
 @use '../../styles/design-tokens' as t;
+@use '../../styles/surfaces' as s;
 
 .wrap {
-  max-width: 360px;
-  margin: t.$spacing-xl auto;
+  max-width: 380px;
+  margin: t.$spacing-2xl auto;
+  padding: t.$spacing-xl;
+  border-radius: t.$radius-xl;
+  @include s.glass;
 }
 
 .title {
@@ -28,12 +32,21 @@
 }
 
 .input {
-  background: var(--surface-2);
+  background: var(--surface-inset);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: t.$radius-md;
   padding: t.$spacing-sm t.$spacing-md;
   font: inherit;
+  transition:
+    border-color t.$transition,
+    box-shadow t.$transition;
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
 }
 
 .error {
@@ -45,14 +58,5 @@
 .button {
   margin-top: t.$spacing-sm;
   padding: t.$spacing-sm t.$spacing-lg;
-  background: var(--accent);
-  color: hsl(222 30% 12%);
-  border: none;
-  border-radius: t.$radius-md;
-  font-weight: t.$font-weight-semibold;
-}
-
-.button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  @include s.accent-button;
 }
