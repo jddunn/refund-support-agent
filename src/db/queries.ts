@@ -51,3 +51,69 @@ export async function findOrder(db: Db, orderId: string): Promise<Order | undefi
     status: row.status,
   };
 }
+
+/** A customer's order, in the shape the customer card renders. */
+export interface CustomerCardOrder {
+  id: string;
+  item: string;
+  category: string;
+  price: number;
+  finalSale: boolean;
+  purchasedAt: string;
+  status: string;
+}
+
+/** A customer plus their orders: exactly what the agent's tools can read. */
+export interface CustomerCard {
+  id: string;
+  name: string;
+  email: string;
+  since: string;
+  priorRefunds: number;
+  orders: CustomerCardOrder[];
+}
+
+/**
+ * List every customer with their orders, for the chat's "acting as" card. This
+ * is a UI read (no fault injection): it shows the operator the same CRM facts
+ * the agent sees when it looks a customer up.
+ */
+export async function listCustomersWithOrders(db: Db): Promise<CustomerCard[]> {
+  const customers = await db.all<{
+    id: string;
+    name: string;
+    email: string;
+    since: string;
+    priorRefunds: number;
+  }>('SELECT id, name, email, since, prior_refunds AS priorRefunds FROM customers ORDER BY id');
+
+  const orders = await db.all<{
+    id: string;
+    customerId: string;
+    item: string;
+    category: string;
+    price: number;
+    finalSale: number;
+    purchasedAt: string;
+    status: string;
+  }>(
+    `SELECT id, customer_id AS customerId, item, category, price,
+            final_sale AS finalSale, purchased_at AS purchasedAt, status
+       FROM orders ORDER BY id`,
+  );
+
+  return customers.map((customer) => ({
+    ...customer,
+    orders: orders
+      .filter((order) => order.customerId === customer.id)
+      .map((order) => ({
+        id: order.id,
+        item: order.item,
+        category: order.category,
+        price: order.price,
+        finalSale: order.finalSale === 1,
+        purchasedAt: order.purchasedAt,
+        status: order.status,
+      })),
+  }));
+}
