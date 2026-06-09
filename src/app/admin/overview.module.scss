@@ -1,0 +1,119 @@
+@use '../../styles/design-tokens' as t;
+@use '../../styles/surfaces' as s;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: t.$spacing-lg;
+}
+
+.title {
+  font-size: t.$font-size-heading;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: t.$font-size-lg;
+  margin: t.$spacing-sm 0 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: t.$spacing-md;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: t.$spacing-lg;
+  border-radius: t.$radius-lg;
+  @include s.glass;
+}
+
+.statLabel {
+  font-size: t.$font-size-xs;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+
+.statValue {
+  font-family: t.$font-display;
+  font-size: 2rem;
+  font-weight: t.$font-weight-bold;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.statSub {
+  font-size: t.$font-size-sm;
+  color: var(--text-dim);
+  font-family: t.$font-mono;
+}
+
+.decisions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: t.$spacing-md;
+}
+
+.decision {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: t.$spacing-lg;
+  border-radius: t.$radius-lg;
+  border: 1px solid transparent;
+}
+
+.decisionCount {
+  font-family: t.$font-display;
+  font-size: 2.2rem;
+  font-weight: t.$font-weight-bold;
+  line-height: 1;
+}
+
+.decisionLabel {
+  font-size: t.$font-size-sm;
+  font-weight: t.$font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.decisionPct {
+  font-size: t.$font-size-sm;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.approve {
+  background: var(--approve-soft);
+  border-color: var(--approve);
+
+  .decisionCount,
+  .decisionLabel {
+    color: var(--approve);
+  }
+}
+
+.deny {
+  background: var(--deny-soft);
+  border-color: var(--deny);
+
+  .decisionCount,
+  .decisionLabel {
+    color: var(--deny);
+  }
+}
+
+.escalate {
+  background: var(--escalate-soft);
+  border-color: var(--escalate);
+
+  .decisionCount,
+  .decisionLabel {
+    color: var(--escalate);
+  }
+}

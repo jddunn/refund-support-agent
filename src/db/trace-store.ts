@@ -146,3 +146,74 @@ export async function getRun(
   );
   return { run, events };
 }
+
+/** Aggregate stats across completed runs, for the admin overview dashboard. */
+export interface RunMetrics {
+  total: number;
+  approve: number;
+  deny: number;
+  escalate: number;
+  other: number;
+  avgLatencyMs: number;
+  p50LatencyMs: number;
+  totalCostUsd: number;
+  totalTokens: number;
+}
+
+export async function aggregateRuns(db: Db): Promise<RunMetrics> {
+  const rows = await db.all<{
+    decision: string | null;
+    latencyMs: number;
+    costUsd: number;
+    tokens: number;
+  }>(
+    `SELECT decision, latency_ms AS latencyMs, cost_usd AS costUsd,
+            (input_tokens + output_tokens) AS tokens
+       FROM agent_runs
+      WHERE ended_at_ms IS NOT NULL`,
+  );
+  const total = rows.length;
+  const countOf = (decision: string) => rows.filter((r) => r.decision === decision).length;
+  const approve = countOf('approve');
+  const deny = countOf('deny');
+  const escalate = countOf('escalate');
+  const latencies = rows.map((r) => r.latencyMs).sort((a, b) => a - b);
+  return {
+    total,
+    approve,
+    deny,
+    escalate,
+    other: total - approve - deny - escalate,
+    avgLatencyMs: total ? Math.round(latencies.reduce((a, b) => a + b, 0) / total) : 0,
+    p50LatencyMs: total ? latencies[Math.floor((total - 1) / 2)] : 0,
+    totalCostUsd: rows.reduce((a, r) => a + r.costUsd, 0),
+    totalTokens: rows.reduce((a, r) => a + r.tokens, 0),
+  };
+}
+
+/** The latest run for a conversation with its events, for the live chat drawer. */
+export async function getLatestRunByConversation(
+  db: Db,
+  conversationId: string,
+): Promise<{ run: RunRow; events: TraceEventRow[] } | null> {
+  const run = await db.get<RunRow>(
+    `SELECT id, conversation_id AS conversationId, customer_id AS customerId, decision, status,
+            input_tokens AS inputTokens, output_tokens AS outputTokens, cost_usd AS costUsd,
+            latency_ms AS latencyMs, started_at_ms AS startedAtMs, ended_at_ms AS endedAtMs
+       FROM agent_runs
+      WHERE conversation_id = ?
+      ORDER BY started_at_ms DESC
+      LIMIT 1`,
+    [conversationId],
+  );
+  if (!run) return null;
+  const events = await db.all<TraceEventRow>(
+    `SELECT id, run_id AS runId, seq, node, kind, input_json AS inputJson, output_json AS outputJson,
+            retry_count AS retryCount, latency_ms AS latencyMs, at_ms AS atMs
+       FROM agent_trace_events
+      WHERE run_id = ?
+      ORDER BY seq ASC`,
+    [run.id],
+  );
+  return { run, events };
+}

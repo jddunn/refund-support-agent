@@ -5,9 +5,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import styles from './AdminNav.module.scss';
 
 const LINKS = [
+  { href: '/admin', label: 'Overview' },
   { href: '/admin/playground', label: 'Playground' },
   { href: '/admin/traces', label: 'Traces' },
   { href: '/admin/policy', label: 'Policy' },
+  { href: '/admin/faceoff', label: 'Face-off' },
 ];
 
 export function AdminNav() {
@@ -22,12 +24,13 @@ export function AdminNav() {
 
   return (
     <header className={styles.bar}>
-      <Link href="/admin/traces" className={styles.brand}>
+      <Link href="/admin" className={styles.brand}>
         Refund Agent · Admin
       </Link>
       <nav className={styles.links} aria-label="Admin">
         {LINKS.map((link) => {
-          const active = path.startsWith(link.href);
+          // The Overview link matches exactly; the rest match by path prefix.
+          const active = link.href === '/admin' ? path === '/admin' : path.startsWith(link.href);
           return (
             <Link
               key={link.href}
