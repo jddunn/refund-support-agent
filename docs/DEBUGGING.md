@@ -47,6 +47,20 @@ The fix addressed both: the customer id is now stated to the model in the system
 
 This is the loop in miniature: a failing case, a trace that named the failed step, a root cause, a fix, and a re-run to confirm.
 
+## Worked example: a provider outage
+
+During development the primary provider's account ran out of credits. Every model call returned a 400, and the adversarial suite collapsed: cases expecting approve or escalate failed, and cases expecting deny "passed" for the wrong reason (the error fallback is a safe denial).
+
+The structured logs named it immediately:
+
+```
+graph | error | "400 ... credit balance is too low to access the Anthropic API"
+```
+
+The failover existed but never fired. Billing exhaustion arrives as a 400 invalid_request_error, and the classifier only treated 429/5xx shapes as provider failures, so the agent failed instead of failing over. The fix classifies billing exhaustion as a provider error (`src/faults/errors.ts`), pinned by a unit test. Re-running the suite with the primary still unavailable passed 15/15 on the fallback provider alone.
+
+The lesson generalizes: a fallback you have never watched fire is a guess. The suite plus the logs made the gap visible in minutes, and the fix is a regression test, not a memory.
+
 ## Forcing failures
 
 `FAULT_INJECT` arms specific faults so you can exercise the recovery paths on demand. Each armed fault fires once per process, which lets the follow-up retry or failover recover instead of hitting the same injected error forever:
