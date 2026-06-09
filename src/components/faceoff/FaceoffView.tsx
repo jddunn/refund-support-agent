@@ -86,7 +86,7 @@ export function FaceoffView({ customers }: { customers: Customer[] }) {
 
       {consensus && (
         <div className={styles.consensus}>
-          All models agree: <b>{[...decisions][0]}</b> — the engine guarantees it.
+          All models agree: <b>{[...decisions][0]}</b>. The engine guarantees it.
         </div>
       )}
 

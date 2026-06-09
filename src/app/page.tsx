@@ -1,34 +1,80 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import styles from './home.module.scss';
 
 const GITHUB_URL = 'https://github.com/jddunn/refund-support-agent';
 
-const PIPELINE: { name: string; desc: string; key?: boolean }[] = [
-  { name: 'screen', desc: 'flag manipulation attempts' },
-  { name: 'agent', desc: 'read policy, look up the order' },
-  { name: 'propose', desc: 'a structured decision' },
-  { name: 'guard', desc: 'engine re-checks, can override', key: true },
-  { name: 'respond', desc: 'a safe, cited reply' },
+/** Small hand-drawn stroke icons. One visual language across the page. */
+function Icon({ d, label }: { d: string; label?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden={label ? undefined : true}
+      role={label ? 'img' : undefined}
+      aria-label={label}
+    >
+      <path d={d} />
+    </svg>
+  );
+}
+
+const ICONS = {
+  screen: 'M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Zm10 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
+  agent: 'M10 4a6 6 0 1 0 0 12 6 6 0 0 0 0-12Zm10 16-5.2-5.2',
+  propose: 'M7 3h7l4 4v14H7V3Zm7 0v4h4M10 12h5M10 16h5',
+  guard: 'M12 3 5 6v5c0 4.5 3 7.5 7 10 4-2.5 7-5.5 7-10V6l-7-3Zm-3 9 2.2 2.2L15 10.5',
+  respond: 'M4 5h16v11H9l-5 4V5Z',
+  shield: 'M12 3 5 6v5c0 4.5 3 7.5 7 10 4-2.5 7-5.5 7-10V6l-7-3Zm-3 9 2.2 2.2L15 10.5',
+  audit: 'M4 5h10M4 10h16M4 15h12M4 20h8M19 3v4M17 5h4',
+  recover: 'M4 5v5h5M20 19v-5h-5M5.5 10A7 7 0 0 1 18 7.5M18.5 14A7 7 0 0 1 6 16.5',
+  target: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-5a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0-4h.01',
+} as const;
+
+const PIPELINE: { name: string; desc: string; icon: keyof typeof ICONS }[] = [
+  { name: 'screen', desc: 'flag manipulation attempts', icon: 'screen' },
+  { name: 'agent', desc: 'read policy, look up the order', icon: 'agent' },
+  { name: 'propose', desc: 'a structured decision', icon: 'propose' },
+  { name: 'guard', desc: 'engine re-checks, can override', icon: 'guard' },
+  { name: 'respond', desc: 'a safe, cited reply', icon: 'respond' },
 ];
 
-const FEATURES: { title: string; body: string }[] = [
+const FEATURES: { title: string; body: string; icon: keyof typeof ICONS }[] = [
   {
     title: 'The engine has the final say',
     body: 'Final-sale items are never refundable; refunds over the limit always escalate. Those are checks in code, not lines in a prompt, so the model cannot be talked past them.',
+    icon: 'shield',
   },
   {
     title: 'Every run is auditable',
-    body: 'The admin dashboard records each run’s node timeline, every tool’s input and output, retries, token cost, and latency.',
+    body: 'The admin dashboard records each run as a waterfall: every step, every tool call with its input and output, retries, token cost, and latency.',
+    icon: 'audit',
   },
   {
     title: 'It recovers from failure',
-    body: 'Provider errors fail over to another model, malformed output is re-prompted, and flaky CRM reads retry — each visible in the trace.',
+    body: 'Provider errors fail over to another model, malformed output is re-prompted, and flaky CRM reads retry. Every recovery shows up in the trace.',
+    icon: 'recover',
   },
   {
     title: 'It holds the policy line',
-    body: 'A 15-case red-team suite — pleading, fake authority, prompt injection, forged and unowned orders — runs green, every time.',
+    body: 'A 15-case red-team suite covers pleading, fake authority, prompt injection, and forged or unowned orders. It runs green, every time.',
+    icon: 'target',
   },
 ];
+
+function StepIcon({ name }: { name: keyof typeof ICONS }): ReactNode {
+  return (
+    <span className={styles.stepIcon}>
+      <Icon d={ICONS[name]} />
+    </span>
+  );
+}
 
 export default function Home() {
   return (
@@ -66,8 +112,11 @@ export default function Home() {
         </p>
         <ol className={styles.pipeline}>
           {PIPELINE.map((step) => (
-            <li key={step.name} className={`${styles.pipeStep} ${step.key ? styles.stepKey : ''}`}>
-              <span className={styles.stepName}>{step.name}</span>
+            <li key={step.name} className={styles.pipeStep}>
+              <span className={styles.stepHead}>
+                <StepIcon name={step.icon} />
+                <span className={styles.stepName}>{step.name}</span>
+              </span>
               <span className={styles.stepDesc}>{step.desc}</span>
             </li>
           ))}
@@ -78,6 +127,9 @@ export default function Home() {
         <div className={styles.features}>
           {FEATURES.map((feature) => (
             <div key={feature.title} className={styles.feature}>
+              <span className={styles.featureIcon}>
+                <Icon d={ICONS[feature.icon]} />
+              </span>
               <h3>{feature.title}</h3>
               <p>{feature.body}</p>
             </div>

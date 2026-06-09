@@ -468,7 +468,34 @@ export function ChatWindow({
         aria-label="Conversation"
       >
         {messages.length === 0 && (
-          <p className={styles.empty}>Ask for a refund. Try an order id like ORD-58120.</p>
+          <div className={styles.emptyState}>
+            <p className={styles.emptyTitle}>
+              {customer
+                ? `Hi ${customer.name.split(' ')[0]}! How can we help?`
+                : 'How can we help?'}
+            </p>
+            <p className={styles.emptyHint}>
+              Ask about a refund and the agent checks your order against the store policy.
+            </p>
+            <div className={styles.suggestions}>
+              {[
+                ...(customer?.orders[0]
+                  ? [`Refund my ${customer.orders[0].item} (${customer.orders[0].id})`]
+                  : []),
+                'What is your refund policy?',
+                'I want a refund but I lost my order number',
+              ].map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  className={styles.suggestion}
+                  onClick={() => setInput(suggestion)}
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
         {messages.map((message, index) => (
           <div key={index} className={message.role === 'customer' ? styles.customer : styles.agent}>
@@ -483,7 +510,7 @@ export function ChatWindow({
             )}
             {message.runId && (
               <a className={styles.traceLink} href={`/admin/traces?run=${message.runId}`}>
-                view trace →
+                View trace →
               </a>
             )}
           </div>

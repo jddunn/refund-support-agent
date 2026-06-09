@@ -1,6 +1,6 @@
 # Refund Support Agent
 
-A customer-support agent that handles e-commerce refund requests. It reads a written refund policy, looks up the customer and their orders, and decides to approve, deny, or escalate — or asks for what it still needs. Refund decisions are enforced by a deterministic policy engine, so the model can explain and reason but cannot be talked into breaking a rule.
+A customer-support agent that handles e-commerce refund requests. It reads a written refund policy, looks up the customer and their orders, and decides to approve, deny, or escalate, or asks for what it still needs. Refund decisions are enforced by a deterministic policy engine, so the model can explain and reason but cannot be talked into breaking a rule.
 
 The app has two surfaces: a customer chat to test the agent, and an admin dashboard with aggregate metrics, a waterfall trace of every run's reasoning and tool calls, a scenario playground that replays the red-team suite, a live-editable view of the CRM records the agent reads, and a model face-off that runs one request across every configured provider.
 
@@ -30,7 +30,7 @@ A single turn runs:
 pick model -> screen -> agent (tool loop) -> propose decision -> policy guard -> respond
 ```
 
-The agent calls read-only tools to fetch the customer (with their orders on file), the order, and the policy, so it can identify the order a customer means without demanding an id. `propose decision` asks the model for a structured decision — `approve`, `deny`, `escalate`, or `needs_info` when it is still gathering information. `policy guard` re-checks refund decisions against the deterministic engine and overrides the model if they disagree; a `needs_info` turn grants nothing and resolves to a refusal when the input screen flagged a manipulation attempt. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full diagram.
+The agent calls read-only tools to fetch the customer (with their orders on file), the order, and the policy, so it can identify the order a customer means without demanding an id. `propose decision` asks the model for a structured decision: `approve`, `deny`, `escalate`, or `needs_info` when it is still gathering information. `policy guard` re-checks refund decisions against the deterministic engine and overrides the model if they disagree; a `needs_info` turn grants nothing and resolves to a refusal when the input screen flagged a manipulation attempt. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full diagram.
 
 The app has two surfaces: a clean customer chat (`/chat`, AUTO model, with the acting customer's CRM card and a live reasoning strip) and a password-protected admin backend (`/admin`: overview, playground, traces, policy, records, face-off).
 

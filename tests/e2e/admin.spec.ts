@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 /**
  * Admin surface: the auth gate (middleware) + the three staff pages. No model
- * key needed — these pages read from the trace store / policy fixtures. The
+ * key needed; these pages read from the trace store / policy fixtures. The
  * test admin password (`admin`) is set by the webServer env in
  * playwright.config.ts.
  */
@@ -17,7 +17,7 @@ test.describe('admin auth gate', () => {
     await page.goto('/login');
     await page.locator('#password').fill('not-the-password');
     await page.getByRole('button', { name: /sign in/i }).click();
-    // Target the error text directly — Next also renders an empty
+    // Target the error text directly; Next also renders an empty
     // role="alert" route-announcer, so an unscoped alert role is ambiguous.
     await expect(page.getByText('Incorrect password.')).toBeVisible();
     await expect(page).toHaveURL(/\/login$/);
@@ -55,7 +55,7 @@ test.describe('admin auth gate', () => {
     await page.getByRole('button', { name: /log out/i }).click();
     await expect(page).toHaveURL(/\/login$/);
 
-    // The session is really gone — the gate redirects again.
+    // The session is really gone: the gate redirects again.
     await page.goto('/admin/traces');
     await expect(page).toHaveURL(/\/login$/);
   });

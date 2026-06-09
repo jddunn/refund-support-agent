@@ -110,11 +110,20 @@
   z-index: 1;
 }
 
-.stepKey {
-  border-color: var(--accent);
-  box-shadow:
-    0 0 0 1px var(--accent),
-    var(--shadow-glass);
+.stepHead {
+  display: flex;
+  align-items: center;
+  gap: t.$spacing-xs;
+}
+
+.stepIcon {
+  display: inline-flex;
+  color: var(--accent);
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
 }
 
 .stepName {
@@ -131,8 +140,14 @@
 
 .features {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: t.$spacing-lg;
+}
+
+@media (max-width: 700px) {
+  .features {
+    grid-template-columns: 1fr;
+  }
 }
 
 .feature {
@@ -150,6 +165,15 @@
     color: var(--text-dim);
     font-size: t.$font-size-sm;
   }
+}
+
+.featureIcon {
+  display: inline-flex;
+  padding: t.$spacing-sm;
+  border-radius: t.$radius-md;
+  background: var(--accent-soft);
+  color: var(--accent);
+  margin-bottom: t.$spacing-sm;
 }
 
 .footer {

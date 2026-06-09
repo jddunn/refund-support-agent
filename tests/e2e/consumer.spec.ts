@@ -23,8 +23,8 @@ test.describe('consumer', () => {
   }) => {
     await page.goto('/chat');
     await expect(page.getByLabel('Acting as')).toBeVisible();
-    await expect(page.getByText(/Ask for a refund/i)).toBeVisible();
-    // Consumers run AUTO with no model control — that selector is admin-only.
+    await expect(page.getByText(/How can we help/i)).toBeVisible();
+    // Consumers run AUTO with no model control; that selector is admin-only.
     await expect(page.locator('#model')).toHaveCount(0);
   });
 

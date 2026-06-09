@@ -63,7 +63,7 @@ export function isProviderError(err: unknown): boolean {
   }
   // Billing exhaustion: Anthropic returns 400 "credit balance is too low",
   // OpenAI returns insufficient_quota. The provider cannot serve any request,
-  // which is a provider failure for our purposes — the caller should fail over.
+  // which is a provider failure for our purposes, so the caller should fail over.
   if (err instanceof Error && /credit balance|insufficient[_ ]quota/i.test(err.message)) {
     return true;
   }
