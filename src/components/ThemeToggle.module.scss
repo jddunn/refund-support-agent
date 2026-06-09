@@ -1,0 +1,41 @@
+@use '../styles/design-tokens' as t;
+@use '../styles/surfaces' as s;
+
+.toggle {
+  position: fixed;
+  top: t.$spacing-lg;
+  right: t.$spacing-lg;
+  z-index: t.$z-toggle;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: t.$radius-pill;
+}
+
+.track {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 58px;
+  height: 30px;
+  padding: 3px;
+  border-radius: t.$radius-pill;
+  @include s.glass;
+}
+
+.thumb {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: t.$radius-pill;
+  background: var(--accent-grad);
+  color: var(--on-accent);
+  box-shadow: var(--shadow-sm);
+  transform: translateX(0);
+  transition: transform t.$transition;
+}
+
+:root[data-theme='dark'] .thumb {
+  transform: translateX(28px);
+}

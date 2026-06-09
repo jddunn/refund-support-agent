@@ -1,0 +1,83 @@
+// Reusable surface treatments. Colors come from the CSS custom properties in
+// globals.scss, so every mixin adapts to light/dark and to the admin palette
+// without recompiling. Consumer surfaces lean glass; admin surfaces lean
+// neumorphic. Both share the same radius and motion language.
+@use 'design-tokens' as t;
+
+/** Frosted translucent panel. The consumer surface. */
+@mixin glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-glass);
+}
+
+/** Soft raised panel. The admin surface. */
+@mixin neumorphic {
+  background: var(--surface-solid);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-neu);
+}
+
+/** Pressed-in well, for inputs and inset areas. */
+@mixin neumorphic-inset {
+  background: var(--surface-inset);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-neu-inset);
+}
+
+/** Plain elevated card. */
+@mixin card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: t.$radius-lg;
+  box-shadow: var(--shadow-md);
+}
+
+/** Paint text with the brand gradient. Used sparingly, on a single line. */
+@mixin gradient-text {
+  background: var(--accent-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/** Lift on hover. Respects reduced-motion via the global guard. */
+@mixin hover-lift {
+  transition:
+    transform t.$transition,
+    box-shadow t.$transition,
+    border-color t.$transition;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--border-strong);
+  }
+}
+
+/** A pill button filled with the brand gradient. */
+@mixin accent-button {
+  border: none;
+  border-radius: t.$radius-md;
+  background: var(--accent-grad);
+  color: var(--on-accent);
+  font-weight: t.$font-weight-semibold;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform t.$transition,
+    box-shadow t.$transition,
+    opacity t.$transition;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
