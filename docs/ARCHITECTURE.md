@@ -60,7 +60,7 @@ flowchart TD
   R -->|otherwise| FA[fast: Sonnet 4.6]
 ```
 
-`AGENT_MODEL` overrides everything. The model selector lives only in the admin playground; consumers always run AUTO. Cost is computed from each call's token usage against `src/obs/pricing.ts`, and the chosen model plus the routing reason are recorded as a trace event.
+`AGENT_MODEL` overrides everything. The model selector lives only in the admin playground; `/api/chat` ignores any client-supplied model unless the request carries a valid admin session, so consumers always run AUTO. Cost is computed from each call's token usage against `src/obs/pricing.ts`, and the chosen model plus the routing reason are recorded as a trace event.
 
 ## Guardrails
 
@@ -96,7 +96,7 @@ Every node and tool writes a trace event through `src/obs/trace.ts` into `agent_
 
 ## Failure handling
 
-`src/faults` holds the error taxonomy (recoverable, validation, provider, policy-violation, fatal) and a fault-injection switch (`FAULT_INJECT`) that is off by default. Nodes are wrapped so failures are classified and recorded rather than swallowed: validation failures re-prompt, provider errors can fail over, and the customer always receives a safe message.
+`src/faults` holds the error taxonomy (recoverable, validation, provider, policy-violation, fatal) and a fault-injection switch (`FAULT_INJECT`) that is off by default. Nodes are wrapped so failures are classified and recorded rather than swallowed: malformed structured output re-prompts, provider errors fail over to the next configured provider when one is available, and the customer always receives a safe message. `db_locked` is injected at the CRM query boundary instead of the trace store so the failure remains visible in the run timeline.
 
 ## Data
 

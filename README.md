@@ -8,7 +8,7 @@ The app has two surfaces: a customer chat to test the agent, and an admin dashbo
 
 ```bash
 npm install
-cp .env.example .env        # add one provider key (Anthropic or OpenAI)
+cp .env.example .env        # add one provider key (Anthropic, OpenAI, or OpenRouter)
 npm run dev
 ```
 
@@ -46,9 +46,9 @@ Every run records to a local trace store and renders at `/admin/traces`: the nod
 
 ## Testing
 
-- `npm test` runs the unit suite. The policy engine and the guard are pure and need no API key.
+- `npm test` runs the unit suite. The policy engine, AUTO router, model factory, output guard, and chat-history conversion need no API key.
 - `tests/adversarial/cases.json` holds the red-team cases (pleading, fake authority, prompt injection, forged orders).
-- `npm run stress` runs the agent against those cases crossed with injected faults.
+- `npm run stress` runs the agent against those cases. Set `FAULT_INJECT` to exercise a specific failure path.
 - `npm run typecheck`, `npm run lint`, and `npm run format:check` are the static gates (also run in CI).
 
 ## Evals
@@ -60,7 +60,7 @@ With a LangSmith key, `npm run eval` pushes the adversarial cases as a LangSmith
 The only required secret is one model API key. Real keys are never committed: `.env.example` is the tracked template, and `.env` (gitignored) holds the real values.
 
 ```bash
-cp .env.example .env   # then fill in ANTHROPIC_API_KEY (or OPENAI_API_KEY)
+cp .env.example .env   # then fill in ANTHROPIC_API_KEY (or OPENAI_API_KEY / OPENROUTER_API_KEY)
 ```
 
 | Variable | Required | Purpose |
@@ -73,13 +73,14 @@ cp .env.example .env   # then fill in ANTHROPIC_API_KEY (or OPENAI_API_KEY)
 
 Where each environment reads its secrets:
 
-- **Local and Docker** read `.env`. Docker Compose loads it through `env_file`.
+- **Local app, local scripts, and Docker** read `.env`. Docker Compose loads it through `env_file`.
 - **Vercel:** Project Settings → Environment Variables, or `vercel env add ANTHROPIC_API_KEY`. Never put keys in the repo.
 - **GitHub Actions:** the CI here runs typecheck, lint, format, and the pure engine tests, so it needs no secrets. If you add a step that calls a model, store the key as a repository secret (Settings → Secrets and variables → Actions → New repository secret) and reference it as `${{ secrets.ANTHROPIC_API_KEY }}`. The app never reads secrets from the repo; the runtime injects them.
 
 ## Docker
 
 ```bash
+cp .env.example .env   # fill in one provider key before running Compose
 docker compose up --build
 ```
 
@@ -111,5 +112,5 @@ src/obs/           trace sink, pricing, logging
 src/faults/        fault injection and the error taxonomy
 src/app/           Next.js routes and API handlers
 src/components/     React components
-tests/             unit, adversarial, and end-to-end tests
+tests/             adversarial fixtures used by stress and eval scripts
 ```

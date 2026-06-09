@@ -49,12 +49,14 @@ This is the loop in miniature: a failing case, a trace that named the failed ste
 
 ## Forcing failures
 
-`FAULT_INJECT` arms specific faults so you can exercise the recovery paths on demand:
+`FAULT_INJECT` arms specific faults so you can exercise the recovery paths on demand. Each armed fault fires once per process, which lets the follow-up retry or failover recover instead of hitting the same injected error forever:
 
 ```bash
 FAULT_INJECT=llm_malformed npm run stress   # force a malformed decision -> retry
-FAULT_INJECT=provider_500 npm run stress     # force a provider error -> failover
-FAULT_INJECT=tool_timeout npm run stress     # force a tool timeout -> recoverable error
+FAULT_INJECT=provider_500 npm run stress     # force a provider error -> failover if another provider key is set
+FAULT_INJECT=rate_limit npm run stress       # force a rate limit -> failover if another provider key is set
+FAULT_INJECT=tool_timeout npm run stress     # force tool calls to fail
+FAULT_INJECT=db_locked npm run stress        # force CRM reads to fail while trace writes still work
 ```
 
 Each armed fault shows up in the trace as a `retry` or `error` event on the node that hit it, so you can confirm the recovery behaved as intended.
