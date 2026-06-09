@@ -4,7 +4,7 @@ import { AIMessage, HumanMessage, SystemMessage, type BaseMessage } from '@langc
 import { RefundState, type RefundStateType } from './state';
 import { DecisionSchema, type Decision } from './schema';
 import { AGENT_SYSTEM_PROMPT, PROPOSE_INSTRUCTION } from './prompts';
-import { makeAgentModel } from './model-factory';
+import { makeAgentModel, makeFallbackModel, type ModelHandle } from './model-factory';
 import { buildTools } from './tools';
 import { screenInput } from './screen';
 import { guardOutput } from './guardrails';
@@ -15,6 +15,8 @@ import type { PolicyVerdict } from '@/policy/types';
 import { Trace } from '@/obs/trace';
 import { costUsd } from '@/obs/pricing';
 import { logger } from '@/obs/logger';
+import { maybeInject } from '@/faults';
+import { isProviderError, ProviderError } from '@/faults/errors';
 
 const log = logger.child({ module: 'graph' });
 
@@ -65,6 +67,28 @@ function textOf(message: BaseMessage): string {
   return typeof message.content === 'string' ? message.content : JSON.stringify(message.content);
 }
 
+type ProviderFailureReason = 'provider_500' | 'rate_limit' | 'provider_error';
+
+function providerFailureReason(err: unknown): ProviderFailureReason | undefined {
+  if (err instanceof ProviderError) {
+    if (err.status === 429) return 'rate_limit';
+    if (err.status >= 500) return 'provider_500';
+    return 'provider_error';
+  }
+
+  const maybeStatus = err as {
+    status?: number;
+    response?: { status?: number };
+    code?: string;
+  };
+  const status = maybeStatus.status ?? maybeStatus.response?.status;
+  if (status === 429) return 'rate_limit';
+  if (typeof status === 'number' && status >= 500) return 'provider_500';
+  if (maybeStatus.code === 'rate_limit_exceeded') return 'rate_limit';
+  if (isProviderError(err)) return 'provider_error';
+  return undefined;
+}
+
 /** Build a corrected decision from the engine verdict when the model disagreed. */
 function rebuildFromVerdict(verdict: PolicyVerdict, orderId: string | null): Decision {
   const reasons = verdict.violations.map((v) => v.reason).join(' ');
@@ -81,6 +105,23 @@ function rebuildFromVerdict(verdict: PolicyVerdict, orderId: string | null): Dec
     reasoning: `Engine verdict ${verdict.outcome}. Clauses: ${verdict.citations.join(', ') || 'none'}.`,
     policyCitations: verdict.citations,
     customerMessage,
+  };
+}
+
+/** Reconcile a model proposal against the deterministic engine verdict. */
+export function reconcileDecisionWithVerdict(
+  proposed: Decision,
+  verdict: PolicyVerdict,
+  orderId: string | null,
+): Decision {
+  if (verdict.outcome !== proposed.decision) {
+    return rebuildFromVerdict(verdict, orderId);
+  }
+  return {
+    ...proposed,
+    amount: verdict.amount,
+    policyCitations:
+      proposed.policyCitations.length > 0 ? proposed.policyCitations : verdict.citations,
   };
 }
 
@@ -115,7 +156,7 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
   // screen so the router can react to manipulation signals.
   const injectionFlags = screenInput(input.message);
   const turnCount = Math.ceil((input.history?.length ?? 0) / 2);
-  const handle = makeAgentModel(input.model ?? 'auto', {
+  let activeHandle: ModelHandle = makeAgentModel(input.model ?? 'auto', {
     injectionFlags,
     message: input.message,
     turnCount,
@@ -123,7 +164,12 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
   await trace.event({
     node: 'model',
     kind: 'node',
-    output: { id: handle.id, provider: handle.provider, reason: handle.routeReason },
+    output: {
+      id: activeHandle.id,
+      provider: activeHandle.provider,
+      tier: activeHandle.tier,
+      reason: activeHandle.routeReason,
+    },
   });
 
   // The order resolved during the run, captured from the tools so the guard can
@@ -140,7 +186,52 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
     },
   });
   const toolNode = new ToolNode(tools);
-  const boundAgent = handle.model.bindTools!(tools);
+  let boundAgent = activeHandle.model.bindTools!(tools);
+
+  async function failOverProvider(node: string, reason: ProviderFailureReason): Promise<boolean> {
+    const fallback = makeFallbackModel(activeHandle, reason);
+    if (!fallback) return false;
+
+    const previous = {
+      id: activeHandle.id,
+      provider: activeHandle.provider,
+      tier: activeHandle.tier,
+    };
+    activeHandle = fallback;
+    boundAgent = activeHandle.model.bindTools!(tools);
+    await trace.event({
+      node,
+      kind: 'retry',
+      output: {
+        reason,
+        from: previous,
+        to: {
+          id: activeHandle.id,
+          provider: activeHandle.provider,
+          tier: activeHandle.tier,
+        },
+      },
+      retryCount: 1,
+    });
+    return true;
+  }
+
+  async function withProviderFailover<T>(
+    node: string,
+    operation: () => Promise<T>,
+    injectFault?: () => void,
+  ): Promise<T> {
+    try {
+      injectFault?.();
+      return await operation();
+    } catch (err) {
+      const reason = providerFailureReason(err);
+      if (reason && (await failOverProvider(node, reason))) {
+        return operation();
+      }
+      throw err;
+    }
+  }
 
   async function screenNode(state: RefundStateType) {
     const text = lastHumanText(state.messages);
@@ -150,10 +241,18 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
   }
 
   async function agentNode(state: RefundStateType) {
-    const result = (await boundAgent.invoke(state.messages, {
-      tags: ['agent'],
-      metadata: { runId: trace.runId },
-    })) as AIMessage;
+    const result = (await withProviderFailover(
+      'agent',
+      () =>
+        boundAgent.invoke(state.messages, {
+          tags: ['agent'],
+          metadata: { runId: trace.runId },
+        }),
+      () => {
+        maybeInject('provider_500');
+        maybeInject('rate_limit');
+      },
+    )) as AIMessage;
     accumulate(usage, result);
     const calls = result.tool_calls ?? [];
     await trace.event({
@@ -165,17 +264,24 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
   }
 
   async function proposeNode(state: RefundStateType) {
-    const structured = handle.model.withStructuredOutput(DecisionSchema, {
-      includeRaw: true,
-      name: 'decision',
-    });
     let parsed: Decision | undefined;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const result = await structured.invoke(
-          [...state.messages, new HumanMessage(PROPOSE_INSTRUCTION)],
-          {
-            tags: ['propose'],
+        if (attempt === 0) maybeInject('llm_malformed');
+        const result = await withProviderFailover(
+          'propose',
+          async () => {
+            const structured = activeHandle.model.withStructuredOutput(DecisionSchema, {
+              includeRaw: true,
+              name: 'decision',
+            });
+            return structured.invoke([...state.messages, new HumanMessage(PROPOSE_INSTRUCTION)], {
+              tags: ['propose'],
+            });
+          },
+          () => {
+            maybeInject('provider_500');
+            maybeInject('rate_limit');
           },
         );
         accumulate(usage, result.raw);
@@ -190,6 +296,7 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
         }
         break;
       } catch (err) {
+        if (providerFailureReason(err)) throw err;
         await trace.event({
           node: 'propose',
           kind: 'retry',
@@ -224,7 +331,7 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
       });
 
       if (verdict.outcome !== proposed.decision) {
-        const corrected = rebuildFromVerdict(verdict, orderId);
+        const corrected = reconcileDecisionWithVerdict(proposed, verdict, orderId);
         await trace.event({
           node: 'guard',
           kind: 'guard',
@@ -241,28 +348,33 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
         output: { engine: verdict.outcome, overridden: false, amount: verdict.amount },
       });
       // Cap the amount at what the engine permits, even when the outcome matches.
-      return { verdict, proposed: { ...proposed, amount: verdict.amount } };
+      return { verdict, proposed: reconcileDecisionWithVerdict(proposed, verdict, orderId) };
     }
 
-    // No order in play: an approval is impossible, so block one if proposed.
-    if (proposed.decision === 'approve') {
-      const corrected: Decision = {
-        ...proposed,
-        decision: 'deny',
-        amount: 0,
-        customerMessage:
-          "I can't approve a refund without an order number that matches your account. Could you share your order id?",
-      };
-      await trace.event({
-        node: 'guard',
-        kind: 'guard',
-        output: { overridden: true, reason: 'no order to approve' },
-      });
-      return { proposed: corrected };
-    }
-
-    await trace.event({ node: 'guard', kind: 'guard', output: { overridden: false } });
-    return {};
+    // No order in play: the engine treats a missing order as a §2.3 denial.
+    const customer = state.customerId ? await findCustomer(db, state.customerId) : undefined;
+    const verdict = evaluateRefund({
+      order: undefined,
+      customer,
+      request: {
+        orderId: '',
+        customerId: state.customerId ?? '',
+        requestedAmount: proposed.amount > 0 ? proposed.amount : undefined,
+      },
+      now,
+    });
+    const corrected = reconcileDecisionWithVerdict(proposed, verdict, null);
+    await trace.event({
+      node: 'guard',
+      kind: 'guard',
+      input: { proposed: proposed.decision },
+      output: {
+        engine: verdict.outcome,
+        overridden: corrected.decision !== proposed.decision,
+        citations: verdict.citations,
+      },
+    });
+    return { proposed: corrected, verdict };
   }
 
   async function respondNode(state: RefundStateType) {
@@ -328,7 +440,7 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
       status: 'ok',
       inputTokens: usage.input,
       outputTokens: usage.output,
-      costUsd: costUsd(handle.id, usage.input, usage.output),
+      costUsd: costUsd(activeHandle.id, usage.input, usage.output),
     });
     return { runId: trace.runId, decision, verdict: finalState.verdict };
   } catch (err) {
@@ -339,7 +451,7 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
       status: 'error',
       inputTokens: usage.input,
       outputTokens: usage.output,
-      costUsd: costUsd(handle.id, usage.input, usage.output),
+      costUsd: costUsd(activeHandle.id, usage.input, usage.output),
     });
     return { runId: trace.runId, decision: SAFE_DENY };
   }

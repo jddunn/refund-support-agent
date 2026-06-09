@@ -5,11 +5,15 @@ import { priceFor } from '@/obs/pricing';
 import { availableProviders, type Provider } from './models';
 import { routeModel, type RouteContext } from './router';
 
+export type ModelTier = 'fast' | 'strong';
+
 /** A model plus the metadata the trace layer needs to compute cost and explain routing. */
 export interface ModelHandle {
   model: BaseChatModel;
   id: string;
   provider: Provider;
+  /** AUTO tier used for this model. Concrete selections default to their closest tier. */
+  tier: ModelTier;
   pricePer1kInput: number;
   pricePer1kOutput: number;
   /** Why this model was chosen (set when AUTO routed, or on a fallback). */
@@ -19,7 +23,7 @@ export interface ModelHandle {
 const MAX_TOKENS = 2048;
 
 /** Per-provider model ids for each tier the AUTO router can pick. */
-const TIERS: Record<Provider, { fast: string; strong: string }> = {
+const TIERS: Record<Provider, Record<ModelTier, string>> = {
   anthropic: { fast: 'claude-sonnet-4-6', strong: 'claude-opus-4-8' },
   openai: { fast: 'gpt-4.1', strong: 'gpt-4.1' },
   openrouter: { fast: 'anthropic/claude-sonnet-4.6', strong: 'anthropic/claude-opus-4' },
@@ -60,6 +64,34 @@ function buildModel(modelId: string, provider: Provider): BaseChatModel {
   return new ChatOpenAI({ model: modelId, maxTokens: MAX_TOKENS });
 }
 
+function tierFor(provider: Provider, modelId: string): ModelTier {
+  if (modelId === TIERS[provider].strong) return 'strong';
+  return 'fast';
+}
+
+function handleFor({
+  id,
+  provider,
+  tier,
+  routeReason,
+}: {
+  id: string;
+  provider: Provider;
+  tier: ModelTier;
+  routeReason?: string;
+}): ModelHandle {
+  const price = priceFor(id);
+  return {
+    model: buildModel(id, provider),
+    id,
+    provider,
+    tier,
+    pricePer1kInput: price.input,
+    pricePer1kOutput: price.output,
+    routeReason,
+  };
+}
+
 /**
  * Build the model for a turn from the UI choice (or AUTO) and the route context.
  * `AGENT_MODEL` in the environment overrides everything. A choice whose provider
@@ -70,33 +102,51 @@ export function makeAgentModel(choice: string, ctx: RouteContext): ModelHandle {
 
   let id: string;
   let provider: Provider;
+  let tier: ModelTier;
   let routeReason: string | undefined;
 
   if (requested === 'auto') {
     const route = routeModel(ctx);
     provider = primaryProvider();
-    id = TIERS[provider][route.tier];
+    tier = route.tier;
+    id = TIERS[provider][tier];
     routeReason = `auto: ${route.reason} -> ${id}`;
   } else if (requested === 'openrouter/auto') {
     provider = 'openrouter';
     id = 'openrouter/auto';
+    tier = 'fast';
   } else {
     provider = providerOf(requested);
     id = requested;
+    tier = tierFor(provider, id);
     if (!availableProviders().includes(provider)) {
       provider = primaryProvider();
+      tier = 'fast';
       id = TIERS[provider].fast;
       routeReason = `requested model unavailable; using ${id}`;
     }
   }
 
-  const price = priceFor(id);
-  return {
-    model: buildModel(id, provider),
+  return handleFor({ id, provider, tier, routeReason });
+}
+
+/**
+ * Build a replacement handle on the next configured provider. This is used for
+ * transient provider failures; it preserves the selected tier so AUTO's routing
+ * decision remains transparent across failover.
+ */
+export function makeFallbackModel(
+  current: ModelHandle,
+  reason: 'provider_500' | 'rate_limit' | 'provider_error',
+): ModelHandle | undefined {
+  const provider = availableProviders().find((candidate) => candidate !== current.provider);
+  if (!provider) return undefined;
+
+  const id = TIERS[provider][current.tier];
+  return handleFor({
     id,
     provider,
-    pricePer1kInput: price.input,
-    pricePer1kOutput: price.output,
-    routeReason,
-  };
+    tier: current.tier,
+    routeReason: `fallback after ${reason}: ${current.provider}/${current.id} -> ${provider}/${id}`,
+  });
 }

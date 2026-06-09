@@ -46,3 +46,20 @@ export class FatalAgentError extends Error {
     this.name = 'FatalAgentError';
   }
 }
+
+/** True for our injected provider errors and for real provider 4xx/5xx shapes. */
+export function isProviderError(err: unknown): boolean {
+  if (err instanceof ProviderError) return true;
+  const e = err as { status?: number; name?: string } | null;
+  if (e && typeof e.status === 'number' && [429, 500, 502, 503, 529].includes(e.status)) {
+    return true;
+  }
+  if (
+    e &&
+    typeof e.name === 'string' &&
+    /ratelimit|overloaded|internalserver|apiconnection/i.test(e.name)
+  ) {
+    return true;
+  }
+  return false;
+}

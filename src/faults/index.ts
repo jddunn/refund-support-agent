@@ -28,9 +28,15 @@ export function isFaultArmed(kind: FaultKind): boolean {
   return armedFaults().has(kind);
 }
 
-/** Throw the error for a fault when it is armed; otherwise do nothing. */
+// Each armed fault fires once per process, so the retry or failover that
+// follows can be observed recovering instead of failing on every attempt.
+const fired = new Set<FaultKind>();
+
+/** Throw a fault's error the first time it is armed and reached, then stop. */
 export function maybeInject(kind: FaultKind): void {
   if (!armedFaults().has(kind)) return;
+  if (fired.has(kind)) return;
+  fired.add(kind);
   switch (kind) {
     case 'tool_timeout':
       throw new RecoverableToolError('Injected fault: tool timeout');

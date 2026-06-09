@@ -1,5 +1,6 @@
 import type { Db } from './index';
 import type { Customer, Order } from '@/policy/types';
+import { maybeInject } from '@/faults';
 
 interface CustomerRow {
   id: string;
@@ -22,6 +23,7 @@ interface OrderRow {
 
 /** Find a customer by id or email. */
 export async function findCustomer(db: Db, idOrEmail: string): Promise<Customer | undefined> {
+  maybeInject('db_locked');
   return db.get<CustomerRow>(
     'SELECT id, name, email, since, prior_refunds AS priorRefunds FROM customers WHERE id = ? OR email = ?',
     [idOrEmail, idOrEmail],
@@ -30,6 +32,7 @@ export async function findCustomer(db: Db, idOrEmail: string): Promise<Customer 
 
 /** Find an order by id, mapping the stored integer flag to a boolean. */
 export async function findOrder(db: Db, orderId: string): Promise<Order | undefined> {
+  maybeInject('db_locked');
   const row = await db.get<OrderRow>(
     `SELECT id, customer_id AS customerId, item, category, price,
             final_sale AS finalSale, purchased_at AS purchasedAt, status

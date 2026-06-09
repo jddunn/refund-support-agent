@@ -55,6 +55,7 @@ export function buildTools(ctx: ToolContext) {
 
   const getOrder = tool(
     async ({ orderId }) => {
+      maybeInject('tool_timeout');
       const order = await findOrder(ctx.db, orderId);
       if (order) ctx.onOrderResolved?.(order.id);
       const result = order ?? { found: false, orderId };
@@ -71,6 +72,7 @@ export function buildTools(ctx: ToolContext) {
 
   const getPolicy = tool(
     async ({ clause }) => {
+      maybeInject('tool_timeout');
       const text = policyText();
       const result = clause ? clauseLine(text, clause) : text;
       await ctx.record('get_policy', { clause: clause ?? null }, { chars: result.length });
@@ -86,6 +88,7 @@ export function buildTools(ctx: ToolContext) {
 
   const checkEligibility = tool(
     async ({ orderId, customerId, requestedAmount }) => {
+      maybeInject('tool_timeout');
       const order = await findOrder(ctx.db, orderId);
       if (order) ctx.onOrderResolved?.(order.id);
       const customer = await findCustomer(ctx.db, customerId);
