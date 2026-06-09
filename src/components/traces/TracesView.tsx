@@ -34,6 +34,7 @@ function badgeClass(decision: string | null): string {
   if (decision === 'approve') return styles.approve;
   if (decision === 'deny') return styles.deny;
   if (decision === 'escalate') return styles.escalate;
+  if (decision === 'needs_info') return styles.needsInfo;
   return styles.neutral;
 }
 

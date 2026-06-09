@@ -411,6 +411,11 @@
   color: var(--text-dim);
   border-color: var(--border);
 }
+.needsInfo {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
 
 @media (max-width: 720px) {
   .layout {

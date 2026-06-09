@@ -25,7 +25,7 @@ export interface Scenario {
 interface Message {
   role: 'customer' | 'agent';
   text: string;
-  decision?: 'approve' | 'deny' | 'escalate';
+  decision?: 'approve' | 'deny' | 'escalate' | 'needs_info';
   runId?: string;
   citations?: string[];
 }
@@ -332,6 +332,14 @@ export function ChatWindow({
             </select>
           </>
         )}
+        <button
+          type="button"
+          className={styles.clear}
+          onClick={() => resetConversation(customerId)}
+          disabled={running || loading || messages.length === 0}
+        >
+          Clear chat
+        </button>
       </div>
 
       {scenarios && scenarios.length > 0 && (
@@ -466,7 +474,7 @@ export function ChatWindow({
           <div key={index} className={message.role === 'customer' ? styles.customer : styles.agent}>
             {message.decision && (
               <span className={`${styles.badge} ${styles[message.decision]}`}>
-                {message.decision}
+                {message.decision === 'needs_info' ? 'needs info' : message.decision}
               </span>
             )}
             <p className={styles.text}>{message.text}</p>

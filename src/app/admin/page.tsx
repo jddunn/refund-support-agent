@@ -35,11 +35,21 @@ function Stat({ label, value, sub }: { label: string; value: ReactNode; sub?: st
   );
 }
 
-function Decision({ kind, count, pct }: { kind: string; count: number; pct: number }) {
+function Decision({
+  kind,
+  label,
+  count,
+  pct,
+}: {
+  kind: string;
+  label?: string;
+  count: number;
+  pct: number;
+}) {
   return (
     <div className={`${styles.decision} ${styles[kind] ?? ''}`}>
       <span className={styles.decisionCount}>{count}</span>
-      <span className={styles.decisionLabel}>{kind}</span>
+      <span className={styles.decisionLabel}>{label ?? kind}</span>
       <span className={styles.decisionPct}>{pct}% of runs</span>
     </div>
   );
@@ -79,6 +89,7 @@ export default async function AdminOverview() {
         <Decision kind="approve" count={m.approve} pct={pct(m.approve)} />
         <Decision kind="deny" count={m.deny} pct={pct(m.deny)} />
         <Decision kind="escalate" count={m.escalate} pct={pct(m.escalate)} />
+        <Decision kind="needs_info" label="needs info" count={m.needsInfo} pct={pct(m.needsInfo)} />
       </div>
     </div>
   );

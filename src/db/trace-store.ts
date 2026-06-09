@@ -153,6 +153,7 @@ export interface RunMetrics {
   approve: number;
   deny: number;
   escalate: number;
+  needsInfo: number;
   other: number;
   avgLatencyMs: number;
   p50LatencyMs: number;
@@ -177,13 +178,15 @@ export async function aggregateRuns(db: Db): Promise<RunMetrics> {
   const approve = countOf('approve');
   const deny = countOf('deny');
   const escalate = countOf('escalate');
+  const needsInfo = countOf('needs_info');
   const latencies = rows.map((r) => r.latencyMs).sort((a, b) => a - b);
   return {
     total,
     approve,
     deny,
     escalate,
-    other: total - approve - deny - escalate,
+    needsInfo,
+    other: total - approve - deny - escalate - needsInfo,
     avgLatencyMs: total ? Math.round(latencies.reduce((a, b) => a + b, 0) / total) : 0,
     p50LatencyMs: total ? latencies[Math.floor((total - 1) / 2)] : 0,
     totalCostUsd: rows.reduce((a, r) => a + r.costUsd, 0),

@@ -117,3 +117,13 @@
     color: var(--escalate);
   }
 }
+
+.needs_info {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+
+  .decisionCount,
+  .decisionLabel {
+    color: var(--accent);
+  }
+}

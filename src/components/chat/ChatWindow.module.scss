@@ -38,6 +38,28 @@
   }
 }
 
+.clear {
+  margin-left: auto;
+  padding: t.$spacing-xs t.$spacing-md;
+  border-radius: t.$radius-md;
+  border: 1px solid var(--border);
+  background: var(--surface-inset);
+  color: var(--text-dim);
+  font-size: t.$font-size-sm;
+  transition:
+    color t.$transition,
+    border-color t.$transition;
+
+  &:hover:not(:disabled) {
+    color: var(--text);
+    border-color: var(--border-strong);
+  }
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
 // "Acting as" card — the agent's-eye view of the selected customer.
 .customerCard {
   display: grid;
@@ -223,6 +245,12 @@
   background: var(--escalate-soft);
   color: var(--escalate);
   border-color: var(--escalate);
+}
+// A conversational turn (gathering info), deliberately neutral, not red.
+.needs_info {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .cite {
