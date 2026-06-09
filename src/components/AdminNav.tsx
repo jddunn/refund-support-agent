@@ -9,6 +9,7 @@ const LINKS = [
   { href: '/admin/playground', label: 'Playground' },
   { href: '/admin/traces', label: 'Traces' },
   { href: '/admin/policy', label: 'Policy' },
+  { href: '/admin/records', label: 'Records' },
   { href: '/admin/faceoff', label: 'Face-off' },
 ];
 

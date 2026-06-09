@@ -1,0 +1,120 @@
+@use '../../styles/design-tokens' as t;
+@use '../../styles/surfaces' as s;
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: t.$spacing-md;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: t.$spacing-lg;
+}
+
+.title {
+  font-size: t.$font-size-heading;
+  margin: 0 0 t.$spacing-xs;
+}
+
+.lead {
+  max-width: 64ch;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.subtitle {
+  font-size: t.$font-size-lg;
+  margin: t.$spacing-sm 0 0;
+}
+
+.reset {
+  flex-shrink: 0;
+  padding: t.$spacing-sm t.$spacing-lg;
+  @include s.accent-button;
+}
+
+.status {
+  min-height: 1.4em;
+  margin: 0;
+  font-family: t.$font-mono;
+  font-size: t.$font-size-xs;
+  color: var(--accent);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border-radius: t.$radius-lg;
+  padding: t.$spacing-sm;
+  @include s.glass;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: t.$font-size-sm;
+
+  th,
+  td {
+    text-align: left;
+    padding: t.$spacing-xs t.$spacing-sm;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  th {
+    color: var(--text-dim);
+    font-weight: t.$font-weight-semibold;
+    font-size: t.$font-size-xs;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+  tbody tr {
+    transition: background t.$transition;
+  }
+  tbody tr:hover {
+    background: var(--surface-inset);
+  }
+}
+
+.mono {
+  font-family: t.$font-mono;
+  font-size: t.$font-size-xs;
+  color: var(--text-dim);
+}
+
+.center {
+  text-align: center;
+}
+
+.cellInput {
+  width: 100%;
+  min-width: 90px;
+  max-width: 140px;
+  background: var(--surface-inset);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: t.$radius-sm;
+  padding: 2px t.$spacing-xs;
+  font: inherit;
+  font-size: t.$font-size-sm;
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft);
+  }
+}
+
+.cellCheck {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}

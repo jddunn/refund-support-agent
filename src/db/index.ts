@@ -85,7 +85,20 @@ interface SeedFile {
 async function seedIfEmpty(db: Db): Promise<void> {
   const counted = await db.get<{ n: number }>('SELECT COUNT(*) AS n FROM customers');
   if (counted && counted.n > 0) return;
+  await insertSeed(db);
+}
 
+/**
+ * Wipe the CRM tables and reload them from seed/customers.json. Used by the
+ * records explorer's reset button after live edits. Trace history is kept.
+ */
+export async function reseedCrm(db: Db): Promise<void> {
+  await db.run('DELETE FROM orders');
+  await db.run('DELETE FROM customers');
+  await insertSeed(db);
+}
+
+async function insertSeed(db: Db): Promise<void> {
   const seedPath = join(process.cwd(), 'seed', 'customers.json');
   const { customers } = JSON.parse(readFileSync(seedPath, 'utf8')) as SeedFile;
 
