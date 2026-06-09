@@ -1,0 +1,169 @@
+@use '../../styles/design-tokens' as t;
+@use '../../styles/surfaces' as s;
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: t.$spacing-md;
+}
+
+.title {
+  font-size: t.$font-size-heading;
+  margin: 0;
+}
+
+.lead {
+  max-width: 64ch;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$spacing-sm;
+  align-items: center;
+}
+
+.picker {
+  background: var(--surface-inset);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: t.$radius-md;
+  padding: t.$spacing-xs t.$spacing-sm;
+  font-size: t.$font-size-sm;
+  font-family: inherit;
+}
+
+.input {
+  flex: 1;
+  min-width: 240px;
+  background: var(--surface-inset);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: t.$radius-md;
+  padding: t.$spacing-sm t.$spacing-md;
+  font: inherit;
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+}
+
+.run {
+  padding: t.$spacing-sm t.$spacing-lg;
+  @include s.accent-button;
+}
+
+.consensus {
+  padding: t.$spacing-sm t.$spacing-md;
+  border-radius: t.$radius-md;
+  background: var(--approve-soft);
+  color: var(--approve);
+  font-weight: t.$font-weight-medium;
+
+  b {
+    text-transform: uppercase;
+  }
+}
+
+.hint {
+  color: var(--text-dim);
+  font-size: t.$font-size-sm;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: t.$spacing-md;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: t.$spacing-sm;
+  padding: t.$spacing-lg;
+  border-radius: t.$radius-lg;
+  @include s.glass;
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$spacing-sm;
+}
+
+.model {
+  font-family: t.$font-mono;
+  font-size: t.$font-size-sm;
+  font-weight: t.$font-weight-semibold;
+  color: var(--accent);
+}
+
+.message {
+  margin: 0;
+  font-size: t.$font-size-sm;
+}
+
+.cite {
+  margin: 0;
+  font-family: t.$font-mono;
+  font-size: t.$font-size-xs;
+  color: var(--text-dim);
+}
+
+.meta {
+  display: flex;
+  gap: t.$spacing-md;
+  margin: 0;
+
+  div {
+    display: flex;
+    flex-direction: column;
+  }
+  dt {
+    font-size: t.$font-size-xs;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  dd {
+    margin: 0;
+    font-size: t.$font-size-sm;
+    font-weight: t.$font-weight-semibold;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px t.$spacing-sm;
+  border-radius: t.$radius-pill;
+  font-size: t.$font-size-xs;
+  font-weight: t.$font-weight-bold;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.approve {
+  background: var(--approve-soft);
+  color: var(--approve);
+  border-color: var(--approve);
+}
+.deny {
+  background: var(--deny-soft);
+  color: var(--deny);
+  border-color: var(--deny);
+}
+.escalate {
+  background: var(--escalate-soft);
+  color: var(--escalate);
+  border-color: var(--escalate);
+}
+.neutral {
+  background: var(--surface-inset);
+  color: var(--text-dim);
+  border-color: var(--border);
+}
