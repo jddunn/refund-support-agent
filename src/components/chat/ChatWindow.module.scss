@@ -408,3 +408,83 @@
   font-size: t.$font-size-sm;
   color: var(--text-dim);
 }
+
+// Live reasoning drawer
+.reasoning {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: t.$spacing-sm;
+  padding: t.$spacing-sm t.$spacing-md;
+  border-radius: t.$radius-lg;
+  @include s.glass;
+}
+
+.reasoningLabel {
+  font-family: t.$font-mono;
+  font-size: t.$font-size-xs;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  font-weight: t.$font-weight-bold;
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: t.$spacing-xs;
+}
+
+.reasonStep {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px t.$spacing-sm;
+  border-radius: t.$radius-pill;
+  background: var(--surface-inset);
+  border: 1px solid var(--border);
+  font-family: t.$font-mono;
+  font-size: t.$font-size-xs;
+  color: var(--text-dim);
+  animation: rise 220ms t.$ease both;
+}
+
+.reasonActive {
+  border-color: var(--accent);
+  color: var(--accent);
+  animation: pulse 1s infinite ease-in-out;
+}
+
+.rsRetry {
+  background: var(--escalate-soft);
+  border-color: transparent;
+  color: var(--escalate);
+}
+.rsGuard {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--accent);
+}
+.rsError {
+  background: var(--deny-soft);
+  border-color: transparent;
+  color: var(--deny);
+}
+
+.reasonRetry {
+  font-weight: t.$font-weight-bold;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}

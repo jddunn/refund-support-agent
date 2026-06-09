@@ -30,11 +30,26 @@ interface Message {
   citations?: string[];
 }
 
+/** One reasoning step streamed from the trace store during a live turn. */
+interface Step {
+  node: string;
+  kind: string;
+  retryCount: number;
+}
+
 type DemoMode = 'canned' | 'live';
 
 function initialsOf(name: string): string {
   const parts = name.split(/\s+/).filter(Boolean);
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
+}
+
+/** Tint a reasoning chip by its event kind. */
+function stepClass(kind: string): string {
+  if (kind === 'retry') return styles.rsRetry;
+  if (kind === 'guard') return styles.rsGuard;
+  if (kind === 'error') return styles.rsError;
+  return '';
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -71,6 +86,9 @@ export function ChatWindow({
   const [running, setRunning] = useState(false);
   const runningRef = useRef(false);
 
+  // Live reasoning steps for the in-flight turn, streamed from the trace store.
+  const [steps, setSteps] = useState<Step[]>([]);
+
   const customer = customers.find((c) => c.id === customerId);
   const scenario = scenarios?.find((s) => s.id === scenarioId);
 
@@ -88,6 +106,7 @@ export function ChatWindow({
     setCustomerId(nextCustomerId);
     setConversationId(convId);
     setMessages([]);
+    setSteps([]);
     return convId;
   }
 
@@ -148,6 +167,32 @@ export function ChatWindow({
     }
   }
 
+  /** Poll the trace store while a turn is in flight to stream reasoning steps. */
+  async function streamTrace(convId: string, active: { on: boolean }): Promise<void> {
+    const pull = async () => {
+      try {
+        const res = await fetch(`/api/runs/live?conversation=${encodeURIComponent(convId)}`);
+        const data = await res.json();
+        if (Array.isArray(data.events)) {
+          setSteps(
+            data.events.map((e: { node: string; kind: string; retryCount: number }) => ({
+              node: e.node,
+              kind: e.kind,
+              retryCount: e.retryCount,
+            })),
+          );
+        }
+      } catch {
+        // ignore poll errors; the drawer simply won't update this tick
+      }
+    };
+    while (active.on) {
+      await pull();
+      await sleep(300);
+    }
+    await pull();
+  }
+
   async function send() {
     const text = input.trim();
     if (!text || loading || running || !conversationId) return;
@@ -155,7 +200,11 @@ export function ChatWindow({
     setMessages((prev) => [...prev, { role: 'customer', text }]);
     setInput('');
     setLoading(true);
+    setSteps([]);
+    const active = { on: true };
+    void streamTrace(conversationId, active);
     const reply = await callAgent(conversationId, text, customerId, history);
+    active.on = false;
     setLoading(false);
     await typeMessage(
       { role: 'agent', decision: reply.decision, runId: reply.runId, citations: reply.citations },
@@ -184,7 +233,11 @@ export function ChatWindow({
       );
     } else {
       setLoading(true);
+      setSteps([]);
+      const active = { on: true };
+      void streamTrace(convId, active);
       const reply = await callAgent(convId, s.customerMessage, s.customerId, []);
+      active.on = false;
       setLoading(false);
       await typeMessage(
         { role: 'agent', decision: reply.decision, runId: reply.runId, citations: reply.citations },
@@ -377,6 +430,25 @@ export function ChatWindow({
               ))}
             </ul>
           )}
+        </div>
+      )}
+
+      {steps.length > 0 && (
+        <div className={styles.reasoning}>
+          <span className={styles.reasoningLabel}>Reasoning</span>
+          <ol className={styles.steps}>
+            {steps.map((s, i) => (
+              <li
+                key={`${s.node}-${i}`}
+                className={`${styles.reasonStep} ${stepClass(s.kind)} ${
+                  loading && i === steps.length - 1 ? styles.reasonActive : ''
+                }`}
+              >
+                {s.node}
+                {s.retryCount > 0 && <span className={styles.reasonRetry}>↻{s.retryCount}</span>}
+              </li>
+            ))}
+          </ol>
         </div>
       )}
 
