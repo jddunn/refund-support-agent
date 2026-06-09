@@ -5,6 +5,7 @@
  *
  *   npm run gen:policy
  */
+import './env';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { HumanMessage } from '@langchain/core/messages';

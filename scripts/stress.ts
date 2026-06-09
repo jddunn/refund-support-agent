@@ -6,6 +6,7 @@
  *   npm run stress
  *   FAULT_INJECT=llm_malformed npm run stress
  */
+import './env';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { runAgent } from '@/agent/graph';

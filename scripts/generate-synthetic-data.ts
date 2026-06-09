@@ -5,6 +5,7 @@
  *
  *   npm run gen:data
  */
+import './env';
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';

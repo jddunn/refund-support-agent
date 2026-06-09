@@ -5,6 +5,7 @@
  *
  *   npm run smoke
  */
+import './env';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { runAgent } from '@/agent/graph';

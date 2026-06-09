@@ -8,6 +8,7 @@
  * The same cases run locally with `npm run stress`; this adds the hosted
  * dataset, per-metric scores, and the run-over-run history in LangSmith.
  */
+import './env';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Client } from 'langsmith';
