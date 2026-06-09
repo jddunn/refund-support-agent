@@ -2,9 +2,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { ReactNode } from 'react';
 import { AdversarialGrid } from '@/components/policy/AdversarialGrid';
+import { PolicyEditor } from '@/components/policy/PolicyEditor';
 import styles from './policy.module.scss';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 /** Render the policy markdown into headings, paragraphs, and lists. */
 function renderPolicy(markdown: string): ReactNode[] {
@@ -72,7 +74,10 @@ export default function PolicyPage() {
   }
   return (
     <div className={styles.layout}>
-      <article className={styles.policy}>{renderPolicy(markdown)}</article>
+      <article className={styles.policy}>
+        <PolicyEditor />
+        {renderPolicy(markdown)}
+      </article>
       <section className={styles.results}>
         <h2>Red-team results</h2>
         <p className={styles.hint}>

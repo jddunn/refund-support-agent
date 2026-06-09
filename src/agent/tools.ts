@@ -25,6 +25,11 @@ function policyText(): string {
   return cachedPolicy;
 }
 
+/** Drop the cached policy text. Called when the admin edits the policy document. */
+export function invalidatePolicyCache(): void {
+  cachedPolicy = null;
+}
+
 function clauseLine(text: string, clause: string): string {
   const hit = text.split('\n').find((line) => line.includes(clause));
   return hit ? hit.trim() : `Clause ${clause} was not found in the policy.`;
