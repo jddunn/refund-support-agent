@@ -55,7 +55,13 @@ export function ChatWindow({
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ conversationId, message: text, customerId, model }),
+        body: JSON.stringify({
+          conversationId,
+          message: text,
+          customerId,
+          model,
+          history: messages.map((message) => ({ role: message.role, text: message.text })),
+        }),
       });
       const data = await res.json();
       setMessages((prev) => [
