@@ -1,8 +1,8 @@
 # Refund Support Agent
 
-A customer-support agent that handles e-commerce refund requests. It reads a written refund policy, looks up the customer and order, and decides to approve, deny, or escalate. The decision is enforced by a deterministic policy engine, so the model can explain and reason but cannot be talked into breaking a rule.
+A customer-support agent that handles e-commerce refund requests. It reads a written refund policy, looks up the customer and their orders, and decides to approve, deny, or escalate — or asks for what it still needs. Refund decisions are enforced by a deterministic policy engine, so the model can explain and reason but cannot be talked into breaking a rule.
 
-The app has two surfaces: a customer chat to test the agent, and an admin dashboard that shows every run's reasoning, tool calls, retries, token cost, and latency.
+The app has two surfaces: a customer chat to test the agent, and an admin dashboard with aggregate metrics, a waterfall trace of every run's reasoning and tool calls, a scenario playground that replays the red-team suite, a live-editable view of the CRM records the agent reads, and a model face-off that runs one request across every configured provider.
 
 ## Quickstart
 
@@ -12,7 +12,7 @@ cp .env.example .env        # add one provider key (Anthropic, OpenAI, or OpenRo
 npm run dev
 ```
 
-Open http://localhost:3000/chat for the customer chat. The admin backend (traces, policy, and the model playground) is at http://localhost:3000/admin and is password-protected; the local default password is `admin`.
+Open http://localhost:3000/chat for the customer chat. The admin backend (overview metrics, the playground and scenario runner, traces, policy, records, and the model face-off) is at http://localhost:3000/admin and is password-protected; the local default password is `admin`.
 
 The database seeds itself from `seed/` on first run. The only required configuration is one model API key.
 
@@ -30,9 +30,9 @@ A single turn runs:
 pick model -> screen -> agent (tool loop) -> propose decision -> policy guard -> respond
 ```
 
-The agent calls read-only tools to fetch the customer, the order, and the policy. `propose decision` asks the model for a structured decision. `policy guard` re-checks it against the deterministic engine and overrides the model if they disagree. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full diagram.
+The agent calls read-only tools to fetch the customer (with their orders on file), the order, and the policy, so it can identify the order a customer means without demanding an id. `propose decision` asks the model for a structured decision — `approve`, `deny`, `escalate`, or `needs_info` when it is still gathering information. `policy guard` re-checks refund decisions against the deterministic engine and overrides the model if they disagree; a `needs_info` turn grants nothing and resolves to a refusal when the input screen flagged a manipulation attempt. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full diagram.
 
-The app has two surfaces: a clean customer chat (`/chat`, AUTO model) and a password-protected admin backend (`/admin`: traces, policy, and a model playground with the provider and model selector).
+The app has two surfaces: a clean customer chat (`/chat`, AUTO model, with the acting customer's CRM card and a live reasoning strip) and a password-protected admin backend (`/admin`: overview, playground, traces, policy, records, face-off).
 
 ## Holding the policy line
 
@@ -42,11 +42,11 @@ The model proposes; the engine disposes. If a customer pleads, claims to be the 
 
 ## Observability
 
-Every run records to a local trace store and renders at `/admin/traces`: the node timeline, each tool's input and output, retries, tokens, cost, and latency. If a LangSmith key is set, the same runs also stream to LangSmith for the full hosted trace and dataset evals. Without a key, the local dashboard works on its own.
+Every run records to a local trace store and renders at `/admin/traces` as a waterfall: per-step latency, each tool's input and output, retries, the model routing reason, screen flags, and the guard's model-vs-engine verdict. The chat streams the same events live while a turn runs, and `/admin` aggregates them into run counts, the red-team pass rate, decision mix, latency, and cost. If a LangSmith key is set, the same runs also stream to LangSmith for the full hosted trace and dataset evals. Without a key, the local dashboard works on its own.
 
 ## Testing
 
-- `npm test` runs the unit suite. The policy engine, AUTO router, model factory, output guard, and chat-history conversion need no API key.
+- `npm test` runs the unit suite. The policy engine, AUTO router, model factory, output guard, fault classification, and chat-history conversion need no API key.
 - `tests/adversarial/cases.json` holds the red-team cases (pleading, fake authority, prompt injection, forged orders).
 - `npm run stress` runs the agent against those cases. Set `FAULT_INJECT` to exercise a specific failure path.
 - `npm run typecheck`, `npm run lint`, and `npm run format:check` are the static gates (also run in CI).

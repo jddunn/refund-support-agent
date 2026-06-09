@@ -60,3 +60,5 @@ FAULT_INJECT=db_locked npm run stress        # force CRM reads to fail while tra
 ```
 
 Each armed fault shows up in the trace as a `retry` or `error` event on the node that hit it, so you can confirm the recovery behaved as intended.
+
+Real provider failures classify the same way without injection: 429/5xx responses, rate-limit and overload error shapes, and billing exhaustion (an out-of-credits provider) all take the failover path, so the suite passes on the fallback provider when the primary cannot serve.
