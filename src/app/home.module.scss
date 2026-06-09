@@ -1,36 +1,147 @@
 @use '../styles/design-tokens' as t;
+@use '../styles/surfaces' as s;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: t.$spacing-2xl;
+  max-width: 900px;
+}
 
 .hero {
-  padding: t.$spacing-xl 0;
+  padding: t.$spacing-xl 0 0;
 }
 
 .title {
-  font-size: 2rem;
+  font-size: t.$font-size-display;
   margin: 0 0 t.$spacing-md;
+  @include s.gradient-text;
 }
 
 .lead {
   max-width: 60ch;
   color: var(--text-dim);
   font-size: t.$font-size-lg;
-  margin: 0 0 t.$spacing-xl;
+  margin: 0 0 t.$spacing-lg;
 }
 
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: t.$spacing-md;
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$spacing-sm;
 }
 
-.card {
-  display: block;
-  padding: t.$spacing-lg;
-  background: var(--surface);
+.primaryBtn {
+  padding: t.$spacing-sm t.$spacing-lg;
+  border-radius: t.$radius-md;
+  background: var(--accent-grad);
+  color: var(--on-accent);
+  font-weight: t.$font-weight-semibold;
+  box-shadow: var(--shadow-sm);
+  transition:
+    transform t.$transition,
+    box-shadow t.$transition;
+
+  &:hover {
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+}
+
+.secondaryBtn,
+.ghBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: t.$spacing-xs;
+  padding: t.$spacing-sm t.$spacing-lg;
+  border-radius: t.$radius-md;
   border: 1px solid var(--border);
-  border-radius: t.$radius-lg;
+  background: var(--surface);
   color: var(--text);
+  font-weight: t.$font-weight-medium;
+  transition: border-color t.$transition;
 
-  h2 {
+  &:hover {
+    text-decoration: none;
+    border-color: var(--border-strong);
+  }
+}
+
+.sectionTitle {
+  font-size: t.$font-size-heading;
+  margin: 0 0 t.$spacing-sm;
+}
+
+.explain {
+  max-width: 64ch;
+  color: var(--text-dim);
+  margin: 0 0 t.$spacing-lg;
+}
+
+.pipeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$spacing-sm;
+}
+
+.pipeStep {
+  position: relative;
+  flex: 1 1 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: t.$spacing-sm t.$spacing-md;
+  border-radius: t.$radius-md;
+  @include s.glass;
+}
+
+.pipeStep:not(:last-child)::after {
+  content: '→';
+  position: absolute;
+  right: -11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim);
+  font-size: t.$font-size-sm;
+  z-index: 1;
+}
+
+.stepKey {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    var(--shadow-glass);
+}
+
+.stepName {
+  font-family: t.$font-mono;
+  font-size: t.$font-size-sm;
+  font-weight: t.$font-weight-bold;
+  color: var(--accent);
+}
+
+.stepDesc {
+  font-size: t.$font-size-xs;
+  color: var(--text-dim);
+}
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: t.$spacing-lg;
+}
+
+.feature {
+  padding: t.$spacing-lg;
+  border-radius: t.$radius-lg;
+  @include s.glass;
+  @include s.hover-lift;
+
+  h3 {
     margin: 0 0 t.$spacing-xs;
     font-size: t.$font-size-lg;
   }
@@ -39,9 +150,42 @@
     color: var(--text-dim);
     font-size: t.$font-size-sm;
   }
+}
 
-  &:hover {
-    text-decoration: none;
-    border-color: var(--accent);
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: t.$spacing-md;
+  padding-top: t.$spacing-lg;
+  border-top: 1px solid var(--border);
+}
+
+.footerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$spacing-lg;
+
+  a {
+    color: var(--text-dim);
+    font-size: t.$font-size-sm;
+
+    &:hover {
+      color: var(--accent);
+    }
+  }
+}
+
+.stack {
+  margin: 0;
+  font-family: t.$font-mono;
+  font-size: t.$font-size-xs;
+  color: var(--text-dim);
+}
+
+@media (max-width: 760px) {
+  .pipeStep:not(:last-child)::after {
+    display: none;
   }
 }
