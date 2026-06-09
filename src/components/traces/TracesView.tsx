@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 import styles from './TracesView.module.scss';
 
@@ -55,6 +55,51 @@ function pretty(json: string): string {
   } catch {
     return json;
   }
+}
+
+// Strings (with an optional trailing colon marking a key), booleans, null, numbers.
+const JSON_TOKEN =
+  /("(?:\\.|[^"\\])*")(\s*:)?|\b(true|false)\b|\bnull\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
+
+/** Lightweight JSON syntax highlighting. Pure tokenizer, no dependencies. */
+function JsonCode({ text }: { text: string }) {
+  const nodes: ReactNode[] = [];
+  let last = 0;
+  let key = 0;
+  let match: RegExpExecArray | null;
+  JSON_TOKEN.lastIndex = 0;
+  while ((match = JSON_TOKEN.exec(text))) {
+    if (match.index > last) nodes.push(text.slice(last, match.index));
+    if (match[1] !== undefined) {
+      nodes.push(
+        <span key={key++} className={match[2] ? styles.jKey : styles.jStr}>
+          {match[1]}
+        </span>,
+      );
+      if (match[2]) nodes.push(match[2]);
+    } else if (match[3]) {
+      nodes.push(
+        <span key={key++} className={styles.jBool}>
+          {match[3]}
+        </span>,
+      );
+    } else if (match[0] === 'null') {
+      nodes.push(
+        <span key={key++} className={styles.jNull}>
+          null
+        </span>,
+      );
+    } else {
+      nodes.push(
+        <span key={key++} className={styles.jNum}>
+          {match[0]}
+        </span>,
+      );
+    }
+    last = match.index + match[0].length;
+  }
+  nodes.push(text.slice(last));
+  return <>{nodes}</>;
 }
 
 /** Waterfall bar width, bucketed to 10% steps so it needs no inline style. */
@@ -119,9 +164,23 @@ export function TracesView() {
       <aside className={styles.list} aria-label="Runs">
         <div className={styles.listHead}>
           <h1>Runs</h1>
-          <button className={styles.refresh} onClick={() => void loadRuns()}>
-            Refresh
-          </button>
+          <div className={styles.listActions}>
+            <button className={styles.refresh} onClick={() => void loadRuns()}>
+              Refresh
+            </button>
+            <button
+              className={styles.clearRuns}
+              onClick={() => {
+                if (!window.confirm('Delete all run history? This cannot be undone.')) return;
+                void fetch('/api/runs', { method: 'DELETE' }).then(() => {
+                  setSelected(null);
+                  void loadRuns();
+                });
+              }}
+            >
+              Clear runs
+            </button>
+          </div>
         </div>
         {runs.length === 0 && (
           <p className={styles.empty}>No runs yet. Use the chat to create one.</p>
@@ -259,12 +318,16 @@ function TraceEvent({
         <div className={styles.io}>
           {event.inputJson && (
             <pre className={styles.pre}>
-              <code>{pretty(event.inputJson)}</code>
+              <code>
+                <JsonCode text={pretty(event.inputJson)} />
+              </code>
             </pre>
           )}
           {event.outputJson && (
             <pre className={styles.pre}>
-              <code>{pretty(event.outputJson)}</code>
+              <code>
+                <JsonCode text={pretty(event.outputJson)} />
+              </code>
             </pre>
           )}
         </div>

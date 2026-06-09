@@ -194,6 +194,12 @@ export async function aggregateRuns(db: Db): Promise<RunMetrics> {
   };
 }
 
+/** Delete every run and trace event. Used by the admin clear-runs action. */
+export async function clearRuns(db: Db): Promise<void> {
+  await db.run('DELETE FROM agent_trace_events');
+  await db.run('DELETE FROM agent_runs');
+}
+
 /** The latest run for a conversation with its events, for the live chat drawer. */
 export async function getLatestRunByConversation(
   db: Db,

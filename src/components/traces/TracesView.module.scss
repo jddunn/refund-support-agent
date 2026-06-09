@@ -25,6 +25,25 @@
   }
 }
 
+.listActions {
+  display: flex;
+  gap: t.$spacing-xs;
+}
+
+.clearRuns {
+  background: var(--deny-soft);
+  color: var(--deny);
+  border: 1px solid transparent;
+  border-radius: t.$radius-md;
+  padding: t.$spacing-xs t.$spacing-sm;
+  font-size: t.$font-size-sm;
+  font-weight: t.$font-weight-medium;
+
+  &:hover {
+    border-color: var(--deny);
+  }
+}
+
 .refresh {
   background: var(--surface-inset);
   color: var(--text-dim);
@@ -378,6 +397,25 @@
 .empty {
   color: var(--text-dim);
   font-size: t.$font-size-sm;
+}
+
+// JSON syntax highlighting inside the I/O panes
+.jKey {
+  color: var(--accent);
+  font-weight: t.$font-weight-semibold;
+}
+.jStr {
+  color: var(--approve);
+}
+.jNum {
+  color: var(--escalate);
+}
+.jBool {
+  color: var(--accent-2);
+}
+.jNull {
+  color: var(--text-dim);
+  font-style: italic;
 }
 
 .badge {
