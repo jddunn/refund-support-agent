@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Db } from '@/db';
-import { findCustomer, findOrder } from '@/db/queries';
+import { findCustomer, findOrder, listOrdersByCustomer } from '@/db/queries';
 import { evaluateRefund } from '@/policy/engine';
 import { maybeInject } from '@/faults';
 
@@ -40,13 +40,18 @@ export function buildTools(ctx: ToolContext) {
     async ({ idOrEmail }) => {
       maybeInject('tool_timeout');
       const customer = await findCustomer(ctx.db, idOrEmail);
-      const result = customer ?? { found: false, idOrEmail };
+      // Include the customer's orders so the agent can identify the order a
+      // customer means without demanding the id from them.
+      const result = customer
+        ? { ...customer, orders: await listOrdersByCustomer(ctx.db, customer.id) }
+        : { found: false, idOrEmail };
       await ctx.record('lookup_customer', { idOrEmail }, result);
       return JSON.stringify(result);
     },
     {
       name: 'lookup_customer',
-      description: 'Resolve a customer by id or email. Call this before evaluating any order.',
+      description:
+        'Resolve a customer by id or email, including their orders on file. Call this before evaluating any order, and use it to find the order a customer means when they have not given an id.',
       schema: z.object({
         idOrEmail: z.string().describe('Customer id (e.g. CUST-1001) or email address'),
       }),

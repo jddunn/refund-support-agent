@@ -7,7 +7,9 @@ import { z } from 'zod';
  * against the deterministic engine.
  */
 export const DecisionSchema = z.object({
-  decision: z.enum(['approve', 'deny', 'escalate']),
+  // `needs_info` is a conversational turn (gathering information), not a refund
+  // decision. The guard passes it through unchanged; it never approves anything.
+  decision: z.enum(['approve', 'deny', 'escalate', 'needs_info']),
   /** The order this decision concerns, or null when none was identified. */
   orderId: z.string().nullable(),
   /** Refund amount in dollars. Zero for a deny. */

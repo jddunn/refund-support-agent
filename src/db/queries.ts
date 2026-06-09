@@ -30,6 +30,26 @@ export async function findCustomer(db: Db, idOrEmail: string): Promise<Customer 
   );
 }
 
+/** All of a customer's orders, oldest first. Used by the lookup_customer tool. */
+export async function listOrdersByCustomer(db: Db, customerId: string): Promise<Order[]> {
+  const rows = await db.all<OrderRow>(
+    `SELECT id, customer_id AS customerId, item, category, price,
+            final_sale AS finalSale, purchased_at AS purchasedAt, status
+       FROM orders WHERE customer_id = ? ORDER BY purchased_at ASC`,
+    [customerId],
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    customerId: row.customerId,
+    item: row.item,
+    category: row.category,
+    price: row.price,
+    finalSale: row.finalSale === 1,
+    purchasedAt: row.purchasedAt,
+    status: row.status,
+  }));
+}
+
 /** Find an order by id, mapping the stored integer flag to a boolean. */
 export async function findOrder(db: Db, orderId: string): Promise<Order | undefined> {
   maybeInject('db_locked');

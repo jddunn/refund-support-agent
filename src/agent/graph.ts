@@ -310,8 +310,39 @@ export async function runAgent(input: RunInput): Promise<RunResult> {
     return { proposed: decision };
   }
 
+  // Manipulation flags that disqualify a needs_info pass-through. A turn that
+  // tries to extract the prompt or override behavior gets a refusal, not a
+  // question. urgency_pressure is deliberately absent: urgency alone is a
+  // normal customer signal, not manipulation.
+  const HARD_MANIPULATION_FLAGS = [
+    'instruction_override',
+    'role_injection',
+    'prompt_exfiltration',
+    'fake_authority',
+  ];
+
   async function guardNode(state: RefundStateType) {
     const proposed = state.proposed ?? SAFE_DENY;
+
+    // A needs_info turn is conversational: the agent is asking for information,
+    // not deciding a refund. It grants nothing (the amount is forced to zero),
+    // so no policy can be broken and the engine is not consulted. The
+    // pass-through is deterministic-gated: when the screen flagged a hard
+    // manipulation attempt, the turn falls through to the engine and resolves
+    // to a refusal instead.
+    const manipulated = (state.injectionFlags ?? []).some((flag) =>
+      HARD_MANIPULATION_FLAGS.includes(flag),
+    );
+    if (proposed.decision === 'needs_info' && !manipulated) {
+      await trace.event({
+        node: 'guard',
+        kind: 'guard',
+        input: { proposed: proposed.decision },
+        output: { engine: 'skipped', overridden: false, needsInfo: true },
+      });
+      return { proposed: { ...proposed, amount: 0 } };
+    }
+
     // Prefer the order actually resolved during the run over the model's claim,
     // so the deterministic check runs even when the model omits the order.
     const orderId = proposed.orderId ?? resolved.orderId ?? null;
