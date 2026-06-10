@@ -4,6 +4,8 @@ An e-commerce refund agent where the model never gets the final say. A customer 
 
 Two surfaces: a customer chat, and a password-gated admin backend with aggregate metrics, a waterfall trace of every run, a red-team playground (canned captures or live), the policy document with live editing, a CRM records explorer (add, edit, delete, reset to seed), and a model face-off that runs one request across every configured provider.
 
+**Live demo:** [refund-support-agent.vercel.app](https://refund-support-agent.vercel.app) — the chat is open, the admin is password-gated. It runs serverless there, so trace history resets on cold starts; clone and run locally for the full persistent dashboard.
+
 ## Run it
 
 ```bash
