@@ -1,8 +1,8 @@
 # Refund Support Agent
 
-A customer-support agent that handles e-commerce refund requests. It reads a written refund policy, looks up the customer and their orders, and decides to approve, deny, or escalate, or asks for what it still needs. Refund decisions are enforced by a deterministic policy engine, so the model can explain and reason but cannot be talked into breaking a rule.
+A customer-support agent that handles e-commerce refund requests. It reads a written refund policy, looks up the customer and their orders, and decides to approve, deny, or escalate, or asks for what it still needs, citing the policy clauses that justify the decision. Refund decisions are enforced by a deterministic policy engine, so the model can explain and reason but cannot be talked into breaking a rule.
 
-The app has two surfaces: a customer chat to test the agent, and an admin dashboard with aggregate metrics, a waterfall trace of every run's reasoning and tool calls, a scenario playground that replays the red-team suite, a live-editable view of the CRM records the agent reads, and a model face-off that runs one request across every configured provider.
+The app has two surfaces: a customer chat to test the agent, and an admin dashboard with aggregate metrics, a waterfall trace of every run's reasoning and tool calls, a scenario playground that replays the red-team suite (canned captures or live), the policy document with live editing, a CRM records explorer where rows can be added, edited, deleted, and reset to seed, and a model face-off that runs one request across every configured provider.
 
 ## Quickstart
 
@@ -30,7 +30,7 @@ A single turn runs:
 pick model -> screen -> agent (tool loop) -> propose decision -> policy guard -> respond
 ```
 
-The agent calls read-only tools to fetch the customer (with their orders on file), the order, and the policy, so it can identify the order a customer means without demanding an id. `propose decision` asks the model for a structured decision: `approve`, `deny`, `escalate`, or `needs_info` when it is still gathering information. `policy guard` re-checks refund decisions against the deterministic engine and overrides the model if they disagree; a `needs_info` turn grants nothing and resolves to a refusal when the input screen flagged a manipulation attempt. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full diagram.
+The agent calls read-only tools to fetch the customer (with their orders on file), the order, and the policy, so it can identify the order a customer means without demanding an id. The policy document is not pasted into every prompt: the model calls `get_policy` (whole document or a single clause) when it needs the text, and every read is a traced event. `propose decision` asks the model for a structured decision: `approve`, `deny`, `escalate`, or `needs_info` when it is still gathering information. The proposal is schema-validated JSON with required `reasoning` and `citations` fields, so the rationale and clause references are first-class output, never text scraped from prose; output that fails validation triggers a re-prompt. `policy guard` re-checks refund decisions against the deterministic engine and overrides the model if they disagree; a `needs_info` turn grants nothing and resolves to a refusal when the input screen flagged a manipulation attempt. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full diagram.
 
 The app has two surfaces: a clean customer chat (`/chat`, AUTO model, with the acting customer's CRM card and a live reasoning strip) and a password-protected admin backend (`/admin`: overview, playground, traces, policy, records, face-off).
 
@@ -39,6 +39,10 @@ The app has two surfaces: a clean customer chat (`/chat`, AUTO model, with the a
 The policy lives in two places that stay in sync: a readable document (`seed/refund-policy.md`) and a set of code rules (`src/policy`). The rules are the source of truth.
 
 The model proposes; the engine disposes. If a customer pleads, claims to be the CEO, or tells the agent to ignore its instructions, the model still cannot produce an approval the engine forbids, because the guard rebuilds the decision from the engine's verdict. Final-sale items are never refundable. Refunds over the escalation limit always route to a human. Those are checks in code, not lines in a prompt.
+
+## Resilience
+
+Model and tool failures are classified, not just caught. Rate limits, overloads, server errors, and billing exhaustion (an out-of-credits 400) all count as provider failures: the run retries and fails over to the next configured provider mid-turn, and the trace records the swap with the reason. Malformed structured output triggers a re-prompt rather than a failover. `FAULT_INJECT` arms any of these failures on demand, chaos-testing style, so every recovery path can be watched firing instead of assumed; see [docs/DEBUGGING.md](docs/DEBUGGING.md) for the full fault list and two worked debugging examples, one of them a real provider outage.
 
 ## Observability
 
@@ -104,7 +108,7 @@ Runs as a normal Node server (`npm run build && npm start`) on any container hos
 ## Project layout
 
 ```
-seed/              synthetic CRM data + the refund policy
+seed/              synthetic CRM data, the refund policy, captured demo scenarios
 src/policy/        deterministic policy engine and rules
 src/agent/         LangGraph graph, nodes, tools, model factory
 src/db/            SQLite wrapper, schema, trace store
