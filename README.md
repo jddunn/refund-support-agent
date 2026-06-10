@@ -1,10 +1,10 @@
 # Refund Support Agent
 
-A customer-support agent that handles e-commerce refund requests. It reads a written refund policy, looks up the customer and their orders, and decides to approve, deny, or escalate, or asks for what it still needs, citing the policy clauses that justify the decision. Refund decisions are enforced by a deterministic policy engine, so the model can explain and reason but cannot be talked into breaking a rule.
+An e-commerce refund agent where the model never gets the final say. A customer chats; an LLM reasons over their order and the written refund policy and proposes a decision with the policy clauses that justify it; a deterministic engine in code re-checks every verdict and overrides the model when they disagree. You can plead, threaten a chargeback, or claim to be the CEO. The engine doesn't care.
 
-The app has two surfaces: a customer chat to test the agent, and an admin dashboard with aggregate metrics, a waterfall trace of every run's reasoning and tool calls, a scenario playground that replays the red-team suite (canned captures or live), the policy document with live editing, a CRM records explorer where rows can be added, edited, deleted, and reset to seed, and a model face-off that runs one request across every configured provider.
+Two surfaces: a customer chat, and a password-gated admin backend with aggregate metrics, a waterfall trace of every run, a red-team playground (canned captures or live), the policy document with live editing, a CRM records explorer (add, edit, delete, reset to seed), and a model face-off that runs one request across every configured provider.
 
-## Quickstart
+## Run it
 
 ```bash
 npm install
@@ -12,109 +12,83 @@ cp .env.example .env        # add one provider key (Anthropic, OpenAI, or OpenRo
 npm run dev
 ```
 
-Open http://localhost:3000/chat for the customer chat. The admin backend (overview metrics, the playground and scenario runner, traces, policy, records, and the model face-off) is at http://localhost:3000/admin and is password-protected; the local default password is `admin`.
+http://localhost:3000/chat is the customer chat. http://localhost:3000/admin is the backend (local default password: `admin`). The database creates and seeds itself from `seed/` on first run; one model API key is the only required configuration.
 
-The database seeds itself from `seed/` on first run. The only required configuration is one model API key.
-
-## How it works
-
-The request flows through three layers with hard boundaries:
-
-- **UI** (`src/app`, `src/components`): the chat and the admin pages.
-- **API** (`src/app/api`): route handlers that run the agent and serve trace data.
-- **Orchestration** (`src/agent`, `src/policy`): a LangGraph state machine plus the policy engine.
-
-A single turn runs:
+## How a turn runs
 
 ```
 pick model -> screen -> agent (tool loop) -> propose decision -> policy guard -> respond
 ```
 
-The agent calls read-only tools to fetch the customer (with their orders on file), the order, and the policy, so it can identify the order a customer means without demanding an id. The policy document is not pasted into every prompt: the model calls `get_policy` (whole document or a single clause) when it needs the text, and every read is a traced event. `propose decision` asks the model for a structured decision: `approve`, `deny`, `escalate`, or `needs_info` when it is still gathering information. The proposal is schema-validated JSON with required `reasoning` and `citations` fields, so the rationale and clause references are first-class output, never text scraped from prose; output that fails validation triggers a re-prompt. `policy guard` re-checks refund decisions against the deterministic engine and overrides the model if they disagree; a `needs_info` turn grants nothing and resolves to a refusal when the input screen flagged a manipulation attempt. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full diagram.
+Three layers with hard boundaries: UI (`src/app`, `src/components`), API (`src/app/api`), and orchestration (`src/agent`, `src/policy`), a LangGraph state machine plus the policy engine.
 
-The app has two surfaces: a clean customer chat (`/chat`, AUTO model, with the acting customer's CRM card and a live reasoning strip) and a password-protected admin backend (`/admin`: overview, playground, traces, policy, records, face-off).
+The agent gathers facts through read-only tools: `lookup_customer` returns the customer with their orders on file (so it can identify the order a customer means without demanding an id), `get_order` and `check_eligibility` cover the rest, and `get_policy` fetches the policy text, whole document or a single clause. The policy is never pasted into every prompt; the model reads it when it needs it, and every read is a traced event.
+
+`propose decision` returns one of four states as schema-validated JSON: `approve`, `deny`, `escalate`, or `needs_info` when the agent is still gathering information. `reasoning` and `citations` are required fields, so the rationale and clause references are structured output, never text scraped from prose. Output that fails validation triggers a re-prompt.
+
+`policy guard` re-runs the deterministic engine and overrides the model when they disagree. A `needs_info` turn grants nothing, and resolves to a refusal when the input screen flagged a manipulation attempt. Full diagrams in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Holding the policy line
 
-The policy lives in two places that stay in sync: a readable document (`seed/refund-policy.md`) and a set of code rules (`src/policy`). The rules are the source of truth.
+The policy lives in two places that stay in sync: a readable document (`seed/refund-policy.md`) the model cites, and code rules (`src/policy`) that decide. The model proposes; the engine disposes. Final-sale items are never refundable. Refunds over $500 always route to a human. Three or more prior refunds, same. Those are checks in code, not lines in a prompt, which is why pleading, fake authority, and prompt injection move the tone of the reply but never the verdict.
 
-The model proposes; the engine disposes. If a customer pleads, claims to be the CEO, or tells the agent to ignore its instructions, the model still cannot produce an approval the engine forbids, because the guard rebuilds the decision from the engine's verdict. Final-sale items are never refundable. Refunds over the escalation limit always route to a human. Those are checks in code, not lines in a prompt.
+## Break it on purpose
 
-## Resilience
+Failures are classified, not just caught. Rate limits, overloads, server errors, and billing exhaustion (an out-of-credits 400) all count as provider failures: the run retries, fails over to the next configured provider mid-turn, and records the swap in the trace with its reason. Malformed structured output re-prompts instead. `FAULT_INJECT` arms any of these on demand, chaos-testing style, so every recovery path gets watched firing rather than assumed. [docs/DEBUGGING.md](docs/DEBUGGING.md) has the fault list and two worked debugging examples; one of them is a real provider outage that exposed a real classification bug.
 
-Model and tool failures are classified, not just caught. Rate limits, overloads, server errors, and billing exhaustion (an out-of-credits 400) all count as provider failures: the run retries and fails over to the next configured provider mid-turn, and the trace records the swap with the reason. Malformed structured output triggers a re-prompt rather than a failover. `FAULT_INJECT` arms any of these failures on demand, chaos-testing style, so every recovery path can be watched firing instead of assumed; see [docs/DEBUGGING.md](docs/DEBUGGING.md) for the full fault list and two worked debugging examples, one of them a real provider outage.
+## What gets recorded
 
-## Observability
+Every run lands in a local SQLite trace store and renders at `/admin/traces` as a waterfall: per-step latency, each tool's input and output, retries with reasons, the model and routing reason, screen flags, and the guard's model-vs-engine verdict, plus tokens and cost per run (a typical turn is a few seconds and about a penny). The chat streams the same events live while a turn runs, and `/admin` aggregates everything into run counts, the red-team pass rate, decision mix, latency, and cost. A LangSmith key adds hosted traces; without one the local dashboard stands alone.
 
-Every run records to a local trace store and renders at `/admin/traces` as a waterfall: per-step latency, each tool's input and output, retries, the model routing reason, screen flags, and the guard's model-vs-engine verdict. The chat streams the same events live while a turn runs, and `/admin` aggregates them into run counts, the red-team pass rate, decision mix, latency, and cost. If a LangSmith key is set, the same runs also stream to LangSmith for the full hosted trace and dataset evals. Without a key, the local dashboard works on its own.
+## Test it
 
-## Testing
+- `npm test`: 25 unit tests across the policy engine, AUTO router, model factory, output guard, fault classification, and history conversion. No API key needed.
+- `npm run stress`: runs the agent against `tests/adversarial/cases.json`, 15 red-team cases (pleading, fake authority, prompt injection, forged orders, limit coaxing). Set `FAULT_INJECT` to exercise a failure path at the same time.
+- `npm run typecheck`, `npm run lint`, `npm run format:check`: the static gates. CI runs all of it plus Playwright end-to-end on every push.
 
-- `npm test` runs the unit suite. The policy engine, AUTO router, model factory, output guard, fault classification, and chat-history conversion need no API key.
-- `tests/adversarial/cases.json` holds the red-team cases (pleading, fake authority, prompt injection, forged orders).
-- `npm run stress` runs the agent against those cases. Set `FAULT_INJECT` to exercise a specific failure path.
-- `npm run typecheck`, `npm run lint`, and `npm run format:check` are the static gates (also run in CI).
+## Score it
 
-## Evals
-
-With a LangSmith key, `npm run eval` pushes the adversarial cases as a LangSmith dataset and scores the agent on `correct_verdict`, `held_the_line`, `cited_policy`, and `no_prompt_leak`, with run-over-run history. Without a key it exits cleanly, and `npm run stress` runs the same cases locally.
+With a LangSmith key, `npm run eval` pushes the adversarial cases as a LangSmith dataset and scores four metrics with run-over-run history: `correct_verdict`, `held_the_line`, `cited_policy`, `no_prompt_leak`. Without a key it exits cleanly; `npm run stress` is the same suite scored locally.
 
 ## Configuration and secrets
 
-The only required secret is one model API key. Real keys are never committed: `.env.example` is the tracked template, and `.env` (gitignored) holds the real values.
-
-```bash
-cp .env.example .env   # then fill in ANTHROPIC_API_KEY (or OPENAI_API_KEY / OPENROUTER_API_KEY)
-```
+One model API key is the only required secret. `.env.example` is the tracked template; `.env` (gitignored) holds real values.
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `OPENROUTER_API_KEY` | yes (one) | model provider, chosen by which key is present |
+| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `OPENROUTER_API_KEY` | one of them | model provider, chosen by which key is present |
 | `AGENT_MODEL` | no | force a model, overriding the selector and the AUTO router |
 | `LANGSMITH_API_KEY` + `LANGSMITH_TRACING=true` | no | hosted tracing and `npm run eval` |
-| `FAULT_INJECT` | no | inject faults to exercise recovery |
+| `FAULT_INJECT` | no | arm fault injection |
+| `ADMIN_PASSWORD`, `SESSION_SECRET` | production | admin login and session signing |
 | `PORT` | no | server port (default 3000) |
 
-Where each environment reads its secrets:
+Local runs, scripts, and Docker read `.env` (Compose loads it via `env_file`). Vercel takes them in Project Settings → Environment Variables. CI needs no secrets; if a workflow step ever calls a model, it gets a repository secret referenced as `${{ secrets.ANTHROPIC_API_KEY }}`, never a value in the repo.
 
-- **Local app, local scripts, and Docker** read `.env`. Docker Compose loads it through `env_file`.
-- **Vercel:** Project Settings → Environment Variables, or `vercel env add ANTHROPIC_API_KEY`. Never put keys in the repo.
-- **GitHub Actions:** the CI here runs typecheck, lint, format, and the pure engine tests, so it needs no secrets. If you add a step that calls a model, store the key as a repository secret (Settings → Secrets and variables → Actions → New repository secret) and reference it as `${{ secrets.ANTHROPIC_API_KEY }}`. The app never reads secrets from the repo; the runtime injects them.
-
-## Docker
+## Ship it
 
 ```bash
-cp .env.example .env   # fill in one provider key before running Compose
-docker compose up --build
+docker compose up --build        # builds, reads .env, persists the db in a named volume
 ```
 
-Builds the image, reads `.env`, and persists the database in a named volume. Then open http://localhost:3000/chat. Without Compose:
-
-```bash
-docker build -t refund-support-agent .
-docker run -p 3000:3000 --env-file .env refund-support-agent
-```
-
-## Deploy
-
-Runs as a normal Node server (`npm run build && npm start`) on any container host with no code changes, and ships a Dockerfile for container platforms. On Vercel it runs as serverless functions: the database uses `/tmp`, so trace history resets on cold starts. Set `ANTHROPIC_API_KEY` (or another provider key) as an environment variable in the deploy.
+Or without Compose: `docker build -t refund-support-agent . && docker run -p 3000:3000 --env-file .env refund-support-agent`. It also runs as a plain Node server (`npm run build && npm start`) on any host, and deploys to Vercel as serverless functions, where the database lives in `/tmp` and trace history resets on cold starts.
 
 ## Docs
 
-- [Architecture](docs/ARCHITECTURE.md): the layers, the graph, model routing, guardrails, and the admin gate, with diagrams.
-- [Debugging a run](docs/DEBUGGING.md): tracing a wrong decision to its root cause.
+- [Architecture](docs/ARCHITECTURE.md): the layers, the graph, routing, guardrails, and the admin gate, with diagrams.
+- [Debugging a run](docs/DEBUGGING.md): tracing a wrong decision to its root cause, twice.
 - [Why TypeScript](docs/STACK.md): the stack decision, and when Python would earn a place.
 
-## Project layout
+## Where things live
 
 ```
 seed/              synthetic CRM data, the refund policy, captured demo scenarios
 src/policy/        deterministic policy engine and rules
-src/agent/         LangGraph graph, nodes, tools, model factory
+src/agent/         LangGraph graph, nodes, tools, router, model factory
 src/db/            SQLite wrapper, schema, trace store
 src/obs/           trace sink, pricing, logging
 src/faults/        fault injection and the error taxonomy
 src/app/           Next.js routes and API handlers
-src/components/     React components
-tests/             adversarial fixtures used by stress and eval scripts
+src/components/    React components
+tests/             adversarial fixtures used by stress and eval
 ```

@@ -24,7 +24,7 @@ flowchart LR
   R --> O[decision, message, citations]
 ```
 
-`pick model` chooses from the admin selector or the AUTO router. `agent` and `tools` loop until the model stops requesting tools; `lookup_customer` returns the customer's orders on file, so the agent can identify the order a customer means without demanding an id. `propose` asks for a decision that matches a fixed schema, retrying on invalid output. `guard` re-runs the deterministic engine and overrides the model when they disagree. `respond` applies the output guardrail and returns the final, guard-approved message.
+`pick model` chooses from the admin selector or the AUTO router. `agent` and `tools` loop until the model stops requesting tools; `lookup_customer` returns the customer's orders on file, so the agent can identify the order a customer means without demanding an id. The policy reaches the model through `get_policy` (whole document or one clause by id) rather than RAG or prompt stuffing: at two pages, retrieval would add an embedding pipeline and a wrong-chunk failure mode for zero benefit, and a traced tool call shows exactly when the agent consulted the handbook. `propose` asks for a decision that matches a fixed schema, retrying on invalid output. `guard` re-runs the deterministic engine and overrides the model when they disagree. `respond` applies the output guardrail and returns the final, guard-approved message.
 
 A decision is one of four states: `approve`, `deny`, `escalate`, or `needs_info`. The first three are refund outcomes the engine rules on; `needs_info` is a conversational turn: the agent is still gathering information (for example, which order the customer means) and grants nothing.
 
